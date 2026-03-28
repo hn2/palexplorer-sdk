@@ -1,0 +1,24 @@
+{
+  "name": "@palexplorer/sdk",
+  "version": "0.1.0",
+  "description": "Official SDK for the Palexplorer P2P file sharing API",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": ["src/", "README.md", "LICENSE"],
+  "keywords": ["palexplorer", "p2p", "file-sharing", "sdk", "api"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palexplorer/sdk"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,72 @@
+import { SharesAPI } from './shares.js';
+import { TransfersAPI } from './transfers.js';
+import { ChatAPI } from './chat.js';
+import { PresenceAPI } from './presence.js';
+import { IdentityAPI } from './identity.js';
+import { CryptoAPI } from './crypto.js';
+import { GroupsAPI } from './groups.js';
+import { CommentsAPI } from './comments.js';
+import { BroadcastAPI } from './broadcast.js';
+import { AuditAPI } from './audit.js';
+
+export class PalexplorerClient {
+  constructor(options = {}) {
+    this.apiKey = options.apiKey || null;
+    this.discoveryServer = (options.discoveryServer || 'https://discovery.palexplorer.com').replace(/\/$/, '');
+    this.localServer = (options.localServer || 'http://localhost:8585').replace(/\/$/, '');
+    this.localToken = options.localToken || null;
+    this.timeout = options.timeout || 10000;
+
+    this.shares = new SharesAPI(this);
+    this.transfers = new TransfersAPI(this);
+    this.chat = new ChatAPI(this);
+    this.presence = new PresenceAPI(this);
+    this.identity = new IdentityAPI(this);
+    this.crypto = new CryptoAPI(this);
+    this.groups = new GroupsAPI(this);
+    this.comments = new CommentsAPI(this);
+    this.broadcast = new BroadcastAPI(this);
+    this.audit = new AuditAPI(this);
+  }
+
+  async fetchLocal(path, options = {}) {
+    const url = `${this.localServer}${path}`;
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (this.localToken) headers['Authorization'] = `Bearer ${this.localToken}`;
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      signal: AbortSignal.timeout(this.timeout),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new PalexplorerError(body.error || `HTTP ${res.status}`, res.status, body);
+    }
+    return res.json();
+  }
+
+  async fetchDiscovery(path, options = {}) {
+    const url = `${this.discoveryServer}${path}`;
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (this.apiKey) headers['X-API-Key'] = this.apiKey;
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      signal: AbortSignal.timeout(this.timeout),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new PalexplorerError(body.error || `HTTP ${res.status}`, res.status, body);
+    }
+    return res.json();
+  }
+}
+
+export class PalexplorerError extends Error {
+  constructor(message, status, body) {
+    super(message);
+    this.name = 'PalexplorerError';
+    this.status = status;
+    this.body = body;
+  }
+}
