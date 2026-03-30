@@ -5,10 +5,13 @@ export class GroupsAPI {
     return this.client.fetchLocal('/api/pals/groups');
   }
 
-  async create(name) {
+  async create(nameOrOpts = {}) {
+    const { name, description, visibility } = typeof nameOrOpts === 'string'
+      ? { name: nameOrOpts }
+      : nameOrOpts;
     return this.client.fetchLocal('/api/pals/groups', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, description, visibility }),
     });
   }
 
@@ -18,16 +21,23 @@ export class GroupsAPI {
     });
   }
 
-  async addMember(groupId, pal) {
+  async addMember(groupId, palId) {
     return this.client.fetchLocal(`/api/pals/groups/${encodeURIComponent(groupId)}/members`, {
       method: 'POST',
-      body: JSON.stringify({ pal }),
+      body: JSON.stringify({ palId }),
     });
   }
 
   async removeMember(groupId, palId) {
     return this.client.fetchLocal(`/api/pals/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(palId)}`, {
       method: 'DELETE',
+    });
+  }
+
+  async broadcast(groupId, message) {
+    return this.client.fetchLocal(`/api/pals/groups/${encodeURIComponent(groupId)}/broadcast`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
     });
   }
 }

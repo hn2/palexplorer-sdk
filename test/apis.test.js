@@ -30,7 +30,7 @@ describe('TransfersAPI', () => {
   });
 
   test('download sends POST to /api/downloads', async () => {
-    mock = mockFetch({ '/api/downloads': { id: 'd1', status: 'queued' } });
+    mock = mockFetch({ '/api/transfers/download': { id: 'd1', status: 'queued' } });
     const client = new PalexplorerClient();
     await client.transfers.download({ magnet: 'magnet:?xt=urn:btih:abc', name: 'file.zip', savePath: '/tmp' });
     assert.equal(mock.calls[0].opts.method, 'POST');
@@ -40,7 +40,7 @@ describe('TransfersAPI', () => {
   });
 
   test('stats fetches /api/stats', async () => {
-    mock = mockFetch({ '/api/stats': { total: 5, active: 2 } });
+    mock = mockFetch({ '/api/transfers/stats': { total: 5, active: 2 } });
     const client = new PalexplorerClient();
     const result = await client.transfers.stats();
     assert.equal(result.total, 5);
@@ -179,7 +179,7 @@ describe('BroadcastAPI', () => {
   afterEach(() => { if (mock) mock.restore(); });
 
   test('toGroup sends POST with message', async () => {
-    mock = mockFetch({ '/api/v1/groups/g1/broadcast': { ok: true, sent: 5 } });
+    mock = mockFetch({ '/api/pals/groups/g1/broadcast': { ok: true, sent: 5 } });
     const client = new PalexplorerClient();
     const result = await client.broadcast.toGroup('g1', 'hello team');
     assert.equal(mock.calls[0].opts.method, 'POST');
@@ -189,7 +189,7 @@ describe('BroadcastAPI', () => {
   });
 
   test('start sends broadcast data', async () => {
-    mock = mockFetch({ '/api/v1/broadcast/start': { ok: true } });
+    mock = mockFetch({ '/api/broadcast/start': { ok: true } });
     const client = new PalexplorerClient();
     await client.broadcast.start({ shareId: 's1', port: 6881 });
     assert.equal(mock.calls[0].opts.method, 'POST');
@@ -198,7 +198,7 @@ describe('BroadcastAPI', () => {
   });
 
   test('stop sends POST', async () => {
-    mock = mockFetch({ '/api/v1/broadcast/stop': { ok: true } });
+    mock = mockFetch({ '/api/broadcast/stop': { ok: true } });
     const client = new PalexplorerClient();
     await client.broadcast.stop();
     assert.equal(mock.calls[0].opts.method, 'POST');

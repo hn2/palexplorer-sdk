@@ -8,6 +8,9 @@ import { GroupsAPI } from './groups.js';
 import { CommentsAPI } from './comments.js';
 import { BroadcastAPI } from './broadcast.js';
 import { AuditAPI } from './audit.js';
+import { SettingsAPI } from './settings.js';
+import { WorkspacesAPI } from './workspaces.js';
+import { AuthAPI } from './auth.js';
 
 export class PalexplorerClient {
   constructor(options = {}) {
@@ -17,6 +20,7 @@ export class PalexplorerClient {
     this.localToken = options.localToken || null;
     this.timeout = options.timeout || 10000;
 
+    this.auth = new AuthAPI(this);
     this.shares = new SharesAPI(this);
     this.transfers = new TransfersAPI(this);
     this.chat = new ChatAPI(this);
@@ -27,6 +31,8 @@ export class PalexplorerClient {
     this.comments = new CommentsAPI(this);
     this.broadcast = new BroadcastAPI(this);
     this.audit = new AuditAPI(this);
+    this.settings = new SettingsAPI(this);
+    this.workspaces = new WorkspacesAPI(this);
   }
 
   async fetchLocal(path, options = {}) {

@@ -87,16 +87,19 @@ The main client class. All sub-APIs are accessed as properties.
 ```javascript
 const pal = new PalexplorerClient(options);
 
-pal.shares      // SharesAPI
-pal.transfers   // TransfersAPI
-pal.chat        // ChatAPI
-pal.presence    // PresenceAPI
-pal.identity    // IdentityAPI
-pal.crypto      // CryptoAPI
-pal.groups      // GroupsAPI
-pal.comments    // CommentsAPI
-pal.broadcast   // BroadcastAPI
-pal.audit       // AuditAPI
+pal.auth        // AuthAPI       — login, logout, TOTP, QR login
+pal.shares      // SharesAPI     — create, list, delete, update shares
+pal.transfers   // TransfersAPI  — download, pause, resume, stats
+pal.chat        // ChatAPI       — send and receive messages
+pal.presence    // PresenceAPI   — online status, heartbeat
+pal.identity    // IdentityAPI   — whoami, resolve handles
+pal.crypto      // CryptoAPI     — Ed25519 sign/verify
+pal.groups      // GroupsAPI     — manage pal groups, broadcast
+pal.comments    // CommentsAPI   — share comments
+pal.broadcast   // BroadcastAPI  — group messaging, media broadcast
+pal.audit       // AuditAPI      — audit log access
+pal.settings    // SettingsAPI   — app settings, API key management
+pal.workspaces  // WorkspacesAPI — workspace management
 ```
 
 Internal methods (used by sub-APIs):
@@ -140,14 +143,16 @@ Manages pal groups via the local daemon.
 | Method | Signature | Description |
 |:---|:---|:---|
 | `list()` | `() => Promise<Group[]>` | List all groups |
-| `create(name)` | `(string) => Promise<Group>` | Create a group |
+| `create(opts)` | `({ name, description?, visibility? }) => Promise<Group>` | Create a group |
 | `delete(groupId)` | `(string) => Promise<void>` | Delete a group |
-| `addMember(groupId, pal)` | `(string, string) => Promise<Group>` | Add a pal to a group |
+| `addMember(groupId, palId)` | `(string, string) => Promise<Group>` | Add a pal to a group by pal ID or public key |
 | `removeMember(groupId, palId)` | `(string, string) => Promise<Group>` | Remove a pal from a group |
+| `broadcast(groupId, message)` | `(string, string) => Promise<{ ok, sent, total }>` | Send message to all group members |
 
 ```javascript
-const group = await pal.groups.create('Team Alpha');
-await pal.groups.addMember(group.id, '@alice');
+const group = await pal.groups.create({ name: 'Team Alpha', visibility: 'private' });
+await pal.groups.addMember(group.id, 'pal-id-or-public-key');
+await pal.groups.broadcast(group.id, 'Meeting in 5 minutes!');
 await pal.groups.removeMember(group.id, 'pal-id');
 await pal.groups.delete(group.id);
 ```
@@ -310,6 +315,89 @@ Ed25519 signing and verification. Requires `sodium-native` installed separately.
 ```javascript
 const signature = await pal.crypto.sign('hello world', privateKeyHex);
 const valid = await pal.crypto.verify('hello world', signature, publicKeyHex);
+```
+
+---
+
+### AuthAPI (`pal.auth`)
+
+Authentication operations against the local daemon.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `status()` | `() => Promise<{ setupRequired }>` | Check if initial setup is required |
+| `me()` | `() => Promise<User>` | Get current authenticated user |
+| `login(opts)` | `({ username, password, totpCode? }) => Promise<{ accessToken, user, requireTotp? }>` | Log in |
+| `logout()` | `() => Promise<void>` | Log out and revoke refresh token |
+| `refresh()` | `() => Promise<{ accessToken }>` | Renew access token via refresh cookie |
+| `setupTotp()` | `() => Promise<{ secret, qrCode }>` | Begin TOTP 2FA setup |
+| `verifyTotp(code)` | `(string) => Promise<void>` | Confirm TOTP code and enable 2FA |
+| `disableTotp(password)` | `(string) => Promise<void>` | Disable 2FA |
+| `initQr()` | `() => Promise<{ sessionId, challenge, linkCode, qrCode, expiresIn }>` | Start QR login session |
+| `pollQr(sessionId)` | `(string) => Promise<{ status, accessToken?, user? }>` | Poll QR session for approval |
+
+```javascript
+// Check setup and login
+const { setupRequired } = await pal.auth.status();
+const { accessToken, user } = await pal.auth.login({ username: 'admin', password: 'pass' });
+
+// Current user
+const me = await pal.auth.me();
+
+// TOTP 2FA setup
+const { secret, qrCode } = await pal.auth.setupTotp();
+await pal.auth.verifyTotp('123456');
+
+// QR login (desktop → web pairing)
+const { sessionId, qrCode: qr } = await pal.auth.initQr();
+const result = await pal.auth.pollQr(sessionId);
+// result.status: 'pending' | 'approved' | 'expired'
+```
+
+---
+
+### SettingsAPI (`pal.settings`)
+
+App settings and API key management via the local daemon.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `get()` | `() => Promise<{ settings, device, favorites }>` | Get current settings |
+| `update(opts)` | `({ theme?, language?, autoConnect?, notifications?, analyticsEnabled? }) => Promise<void>` | Update settings |
+| `listApiKeys()` | `() => Promise<ApiKey[]>` | List API keys |
+| `createApiKey(name)` | `(string) => Promise<{ key, id }>` | Create a new API key |
+| `revokeApiKey(id)` | `(string) => Promise<void>` | Revoke an API key |
+
+```javascript
+const { settings } = await pal.settings.get();
+await pal.settings.update({ theme: 'dark', notifications: true });
+
+const keys = await pal.settings.listApiKeys();
+const { key, id } = await pal.settings.createApiKey('my-script');
+await pal.settings.revokeApiKey(id);
+```
+
+---
+
+### WorkspacesAPI (`pal.workspaces`)
+
+Workspace management via the local daemon.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `list()` | `() => Promise<Workspace[]>` | List all workspaces |
+| `create(name)` | `(string) => Promise<Workspace>` | Create a workspace |
+| `delete(id)` | `(string) => Promise<void>` | Delete a workspace |
+| `activate(id)` | `(string) => Promise<void>` | Set a workspace as active |
+| `addShare(id, shareId)` | `(string, string) => Promise<void>` | Add a share to a workspace |
+| `removeShare(id, shareId)` | `(string, string) => Promise<void>` | Remove a share from a workspace |
+
+```javascript
+const ws = await pal.workspaces.create('Project Alpha');
+await pal.workspaces.activate(ws.workspace.id);
+await pal.workspaces.addShare(ws.workspace.id, 'share-id');
+await pal.workspaces.removeShare(ws.workspace.id, 'share-id');
+await pal.workspaces.delete(ws.workspace.id);
 ```
 
 ---
