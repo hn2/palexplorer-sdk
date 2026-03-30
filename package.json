@@ -9,11 +9,7 @@
   },
   "files": ["src/", "README.md", "LICENSE"],
   "keywords": ["palexplorer", "p2p", "file-sharing", "sdk", "api"],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/palexplorer/sdk"
-  },
+  "license": "UNLICENSED",
   "scripts": {
     "test": "node --test test/*.test.js"
   },

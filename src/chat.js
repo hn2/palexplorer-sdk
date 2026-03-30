@@ -1,7 +1,7 @@
 export class ChatAPI {
   constructor(client) { this.client = client; }
 
-  async send({ to, text, toPublicKey }) {
+  async send({ to, text }) {
     return this.client.fetchDiscovery('/messages', {
       method: 'POST',
       body: JSON.stringify({

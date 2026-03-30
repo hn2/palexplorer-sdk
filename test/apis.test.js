@@ -102,9 +102,6 @@ describe('ChatAPI', () => {
   });
 
   test('receive adds deviceId query param', async () => {
-    mock = mockFetch((url) => {
-      return { messages: [] };
-    });
     mock = mockFetch({ '*': { messages: [] } });
     const client = new PalexplorerClient();
     await client.chat.receive({ handle: 'alice', deviceId: 'dev1' });

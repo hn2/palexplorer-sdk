@@ -382,4 +382,4 @@ See the [examples/](./examples/) directory:
 
 ## License
 
-MIT
+Copyright (c) 2026 Palexplorer. All rights reserved. Proprietary and confidential.
