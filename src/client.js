@@ -11,6 +11,10 @@ import { AuditAPI } from './audit.js';
 import { SettingsAPI } from './settings.js';
 import { WorkspacesAPI } from './workspaces.js';
 import { AuthAPI } from './auth.js';
+import { PalsAPI } from './pals.js';
+import { BillingAPI } from './billing.js';
+import { ShareLinksAPI } from './shareLinks.js';
+import { NetworksAPI } from './networks.js';
 
 export class PalexplorerClient {
   constructor(options = {}) {
@@ -33,6 +37,10 @@ export class PalexplorerClient {
     this.audit = new AuditAPI(this);
     this.settings = new SettingsAPI(this);
     this.workspaces = new WorkspacesAPI(this);
+    this.pals = new PalsAPI(this);
+    this.billing = new BillingAPI(this);
+    this.shareLinks = new ShareLinksAPI(this);
+    this.networks = new NetworksAPI(this);
   }
 
   async fetchLocal(path, options = {}) {

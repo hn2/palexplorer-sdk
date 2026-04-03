@@ -6,3 +6,7 @@ export { TransfersAPI } from './transfers.js';
 export { GroupsAPI } from './groups.js';
 export { SettingsAPI } from './settings.js';
 export { WorkspacesAPI } from './workspaces.js';
+export { PalsAPI } from './pals.js';
+export { BillingAPI } from './billing.js';
+export { ShareLinksAPI } from './shareLinks.js';
+export { NetworksAPI } from './networks.js';

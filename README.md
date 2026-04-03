@@ -2,6 +2,8 @@
 
 Official JavaScript SDK for the Palexplorer P2P file sharing API.
 
+> **Status:** v0.1.0 — early stage, API stabilizing. Zero external dependencies, ES modules only.
+
 ## Installation
 
 ```bash
