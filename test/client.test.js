@@ -49,10 +49,10 @@ describe('PalexplorerClient', () => {
   test('strips trailing slashes from servers', () => {
     const client = new PalexplorerClient({
       discoveryServer: 'https://d.com/',
-      localServer: 'http://l.com/',
+      localServer: 'http://localhost:9999/',
     });
     assert.equal(client.discoveryServer, 'https://d.com');
-    assert.equal(client.localServer, 'http://l.com');
+    assert.equal(client.localServer, 'http://localhost:9999');
   });
 
   test('has all sub-APIs', () => {
