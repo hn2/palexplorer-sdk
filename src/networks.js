@@ -17,6 +17,9 @@ export class NetworksAPI {
   }
 
   async update(networkId, patch) {
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw new TypeError('patch must be a plain object');
+    }
     return this.client.fetchLocal(`/api/v1/networks/${encodeURIComponent(networkId)}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),
@@ -46,6 +49,9 @@ export class NetworksAPI {
   }
 
   async updateMember(networkId, userId, patch) {
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw new TypeError('patch must be a plain object');
+    }
     return this.client.fetchLocal(`/api/v1/networks/${encodeURIComponent(networkId)}/members/${encodeURIComponent(userId)}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),

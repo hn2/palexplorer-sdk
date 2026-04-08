@@ -6,12 +6,20 @@ export class IdentityAPI {
   }
 
   async resolve(handle) {
+    if (typeof handle !== 'string' || !handle.trim()) {
+      throw new TypeError('handle must be a non-empty string');
+    }
     const h = handle.replace(/^@/, '');
+    if (!h) throw new TypeError('handle must be a non-empty string');
     return this.client.fetchDiscovery(`/resolve/${encodeURIComponent(h)}`);
   }
 
   async devices(handle) {
+    if (typeof handle !== 'string' || !handle.trim()) {
+      throw new TypeError('handle must be a non-empty string');
+    }
     const h = handle.replace(/^@/, '');
+    if (!h) throw new TypeError('handle must be a non-empty string');
     return this.client.fetchDiscovery(`/devices/${encodeURIComponent(h)}`);
   }
 

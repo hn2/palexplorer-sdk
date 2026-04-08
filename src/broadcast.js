@@ -12,6 +12,9 @@ export class BroadcastAPI {
   // Media streaming broadcast — requires desktop app (Electron IPC)
   // Returns { error, desktopRequired: true } when called via REST API
   async start(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new TypeError('data must be a plain object');
+    }
     return this.client.fetchLocal('/api/broadcast/start', {
       method: 'POST',
       body: JSON.stringify(data),

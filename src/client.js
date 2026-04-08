@@ -16,13 +16,31 @@ import { BillingAPI } from './billing.js';
 import { ShareLinksAPI } from './shareLinks.js';
 import { NetworksAPI } from './networks.js';
 
+function validateServerUrl(raw, allowHttp = false) {
+  let u;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new TypeError(`Invalid server URL: ${raw}`);
+  }
+  if (u.protocol === 'https:') return u.origin;
+  if (allowHttp && u.protocol === 'http:') {
+    const loopback = ['localhost', '127.0.0.1', '::1'];
+    if (loopback.includes(u.hostname)) return u.origin;
+    throw new TypeError(`HTTP only allowed for localhost, got ${u.hostname}`);
+  }
+  throw new TypeError(`Insecure server URL scheme: ${u.protocol}`);
+}
+
 export class PalexplorerClient {
   constructor(options = {}) {
     this.apiKey = options.apiKey || null;
-    this.discoveryServer = (options.discoveryServer || 'https://discovery.palexplorer.com').replace(/\/$/, '');
-    this.localServer = (options.localServer || 'http://localhost:8585').replace(/\/$/, '');
+    this.discoveryServer = validateServerUrl(options.discoveryServer || 'https://discovery.palexplorer.com');
+    this.localServer = validateServerUrl(options.localServer || 'http://localhost:8585', true);
     this.localToken = options.localToken || null;
-    this.timeout = options.timeout || 10000;
+    this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
+      ? options.timeout
+      : 10000;
 
     this.auth = new AuthAPI(this);
     this.shares = new SharesAPI(this);
@@ -81,6 +99,6 @@ export class PalexplorerError extends Error {
     super(message);
     this.name = 'PalexplorerError';
     this.status = status;
-    this.body = body;
+    Object.defineProperty(this, 'body', { value: body, enumerable: false, writable: false });
   }
 }
