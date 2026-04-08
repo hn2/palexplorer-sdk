@@ -102,6 +102,10 @@ pal.broadcast   // BroadcastAPI  — group messaging, media broadcast
 pal.audit       // AuditAPI      — audit log access
 pal.settings    // SettingsAPI   — app settings, API key management
 pal.workspaces  // WorkspacesAPI — workspace management
+pal.pals        // PalsAPI       — manage pals (contacts) and their groups
+pal.billing     // BillingAPI    — subscription status, checkout, license activation
+pal.shareLinks  // ShareLinksAPI — create and redeem public share links
+pal.networks    // NetworksAPI   — private networks, invite codes, member management
 ```
 
 Internal methods (used by sub-APIs):
@@ -404,6 +408,114 @@ await pal.workspaces.delete(ws.workspace.id);
 
 ---
 
+### PalsAPI (`pal.pals`)
+
+Manages pals (contacts) and their groups via the local daemon.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `list()` | `() => Promise<Pal[]>` | List all pals |
+| `add(handle)` | `(string) => Promise<Pal>` | Add a pal by handle |
+| `remove(palId)` | `(string) => Promise<void>` | Remove a pal |
+| `groups()` | `() => Promise<Group[]>` | List all pal groups |
+| `createGroup(opts)` | `({ name, description?, visibility? }) => Promise<Group>` | Create a pal group |
+| `deleteGroup(groupId)` | `(string) => Promise<void>` | Delete a pal group |
+| `addGroupMember(groupId, palId)` | `(string, string) => Promise<Group>` | Add a pal to a group |
+| `removeGroupMember(groupId, palId)` | `(string, string) => Promise<Group>` | Remove a pal from a group |
+
+```javascript
+const pals = await pal.pals.list();
+await pal.pals.add('@alice');
+await pal.pals.remove('pal-id');
+
+const group = await pal.pals.createGroup({ name: 'Family' });
+await pal.pals.addGroupMember(group.id, 'pal-id');
+await pal.pals.removeGroupMember(group.id, 'pal-id');
+await pal.pals.deleteGroup(group.id);
+```
+
+---
+
+### BillingAPI (`pal.billing`)
+
+Subscription and license management.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `status()` | `() => Promise<BillingStatus>` | Get local subscription status |
+| `validate(publicKey)` | `(string) => Promise<ProStatus>` | Validate Pro status for a public key via discovery server |
+| `createCheckout(opts)` | `({ plan, successUrl, cancelUrl }) => Promise<{ url }>` | Create a Lemon Squeezy checkout URL |
+| `createPortalSession()` | `() => Promise<{ url }>` | Open the billing portal for the current user |
+| `activateLicense(licenseKey)` | `(string) => Promise<void>` | Activate a license key |
+| `deactivateLicense(licenseKey)` | `(string) => Promise<void>` | Deactivate a license key |
+
+```javascript
+const status = await pal.billing.status();
+await pal.billing.activateLicense('XXXX-YYYY-ZZZZ');
+
+const { url } = await pal.billing.createCheckout({
+  plan: 'pro',
+  successUrl: 'https://myapp.com/success',
+  cancelUrl: 'https://myapp.com/cancel',
+});
+```
+
+---
+
+### ShareLinksAPI (`pal.shareLinks`)
+
+Create and redeem public share links via the discovery server.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `create(opts)` | `({ shareId, expiresIn?, password?, maxDownloads?, recipients? }) => Promise<ShareLink>` | Create a public link for a share |
+| `get(linkId)` | `(string) => Promise<ShareLink>` | Get share link metadata |
+| `redeem(linkId, password?)` | `(string, string?) => Promise<{ magnet }>` | Redeem a link to get the magnet URI |
+| `createGroupLink(opts)` | `({ shareId, groupId }) => Promise<ShareLink>` | Create a share link restricted to a group |
+
+```javascript
+const link = await pal.shareLinks.create({
+  shareId: 'share-id',
+  expiresIn: 86400,   // seconds
+  maxDownloads: 10,
+});
+console.log(link.url);
+
+const { magnet } = await pal.shareLinks.redeem(link.id);
+```
+
+---
+
+### NetworksAPI (`pal.networks`)
+
+Private networks with invite-code membership.
+
+| Method | Signature | Description |
+|:---|:---|:---|
+| `list()` | `() => Promise<Network[]>` | List all networks |
+| `get(networkId)` | `(string) => Promise<Network>` | Get a network by ID |
+| `create(opts)` | `({ name, description?, visibility? }) => Promise<Network>` | Create a network |
+| `update(networkId, patch)` | `(string, object) => Promise<Network>` | Update network properties |
+| `delete(networkId)` | `(string) => Promise<void>` | Delete a network |
+| `members(networkId)` | `(string) => Promise<Member[]>` | List network members |
+| `invite(networkId)` | `(string) => Promise<{ inviteCode }>` | Generate an invite code |
+| `join(inviteCode)` | `(string) => Promise<void>` | Join a network via invite code |
+| `updateMember(networkId, userId, patch)` | `(string, string, object) => Promise<Member>` | Update a member's role or status |
+
+```javascript
+const net = await pal.networks.create({ name: 'Dev Team', visibility: 'private' });
+const { inviteCode } = await pal.networks.invite(net.id);
+
+// On another device:
+await pal.networks.join(inviteCode);
+
+const members = await pal.networks.members(net.id);
+await pal.networks.updateMember(net.id, members[0].userId, { role: 'admin' });
+await pal.networks.delete(net.id);
+```
+
+---
+
 ### DiscoveryClient
 
 Standalone lightweight client for discovery server operations only. Does not require a local daemon.
@@ -458,10 +570,13 @@ try {
 ## Examples
 
 See the [examples/](./examples/) directory:
-- `quickstart.js` -- Basic usage
-- `share-file.js` -- Create and manage shares
-- `monitor-transfers.js` -- Real-time transfer monitoring
-- `chat-bot.js` -- Auto-reply chat bot
+
+| File | Description |
+|:---|:---|
+| [`quickstart.js`](./examples/quickstart.js) | Basic usage: identity, shares, presence, and transfer stats |
+| [`share-file.js`](./examples/share-file.js) | Create a private share with recipients, list all shares, revoke a share |
+| [`monitor-transfers.js`](./examples/monitor-transfers.js) | Poll transfer stats and active downloads every 5 seconds with a progress bar |
+| [`chat-bot.js`](./examples/chat-bot.js) | Auto-reply bot that polls for incoming messages and responds via discovery server |
 
 ## Requirements
 
