@@ -5,10 +5,10 @@ export class TransfersAPI {
     return this.client.fetchLocal('/api/transfers');
   }
 
-  async download({ magnet, name, encryptedShareKey }) {
+  async download({ magnet, name, savePath, encryptedShareKey }) {
     return this.client.fetchLocal('/api/transfers/download', {
       method: 'POST',
-      body: JSON.stringify({ magnet, name, encryptedShareKey }),
+      body: JSON.stringify({ magnet, name, savePath, encryptedShareKey }),
     });
   }
 

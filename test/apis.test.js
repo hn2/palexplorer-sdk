@@ -37,6 +37,7 @@ describe('TransfersAPI', () => {
     const body = JSON.parse(mock.calls[0].opts.body);
     assert.equal(body.magnet, 'magnet:?xt=urn:btih:abc');
     assert.equal(body.name, 'file.zip');
+    assert.equal(body.savePath, '/tmp');
   });
 
   test('stats fetches /api/stats', async () => {
