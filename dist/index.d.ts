@@ -1,5 +1,5 @@
 // Palexplorer SDK — TypeScript definitions
-// @palexplorer/sdk@0.1.0-beta.1
+// @palexplorer/sdk@0.1.0-beta.2
 
 export interface ClientOptions {
   apiKey?: string;

@@ -1,6 +1,6 @@
 {
   "name": "@palexplorer/sdk",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Official SDK for the Palexplorer P2P file sharing API",
   "type": "module",
   "main": "src/index.js",

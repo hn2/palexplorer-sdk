@@ -4,6 +4,14 @@ All notable changes to `@palexplorer/sdk` will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0-beta.2] — 2026-08-28
+
+### Fixed
+
+- Ship the TypeScript declaration file referenced by the package manifest.
+- Align declaration method names and signatures with the current JavaScript API.
+- Forward the documented optional `savePath` in transfer download requests.
+
 ## [0.1.0-beta.1] — 2026-05-18
 
 ### Added
