@@ -29,3 +29,21 @@ jobs:
       - run: npm ci
 
       - run: npm test
+
+  # Self-hosted mirror of the job above. GitHub-hosted runners are blocked by
+  # account billing (hn2/palexplorer#213); this job runs on the dev-local runner
+  # registered for this repository (labels: self-hosted, linux, x64, codex-ci)
+  # and only for pushes/PRs by the repository owner, never for forks.
+  test-self-hosted:
+    name: CI (self-hosted)
+    if: github.actor == 'hn2'
+    runs-on: [self-hosted, linux, x64, codex-ci]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
