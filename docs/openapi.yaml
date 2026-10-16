@@ -1,0 +1,593 @@
+openapi: 3.0.3
+info:
+  title: Palexplorer API
+  description: |
+    Official API for Palexplorer P2P file sharing platform.
+
+    ## Authentication
+
+    Two authentication methods are supported:
+
+    **API Key** (for discovery server endpoints):
+    ```
+    X-API-Key: pk_pro_your_key_here
+    ```
+
+    **Bearer Token** (for local daemon endpoints):
+    ```
+    Authorization: Bearer your_local_token
+    ```
+
+    ## Rate Limits
+
+    | Plan | Requests/min | API Keys |
+    |------|-------------|----------|
+    | Free | No API access | 0 |
+    | Pro | 600 | 1 |
+    | API Pro | 1,200 | 5 |
+    | Team | 2,400 | 20 |
+
+    Rate limit headers are included in every response:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Requests remaining
+    - `X-RateLimit-Reset`: Unix timestamp when window resets
+
+  version: 0.3.0
+  contact:
+    email: api@palexplorer.com
+    url: https://palexplorer.com
+  license:
+    name: MIT
+
+servers:
+  - url: https://discovery.palexplorer.com
+    description: Discovery Server (production)
+  - url: http://localhost:8585
+    description: Local Daemon
+
+tags:
+  - name: Identity
+    description: Identity resolution and management
+  - name: Shares
+    description: File share management (local daemon)
+  - name: Transfers
+    description: Download and upload management (local daemon)
+  - name: Chat
+    description: P2P messaging via discovery server
+  - name: Presence
+    description: Online/offline status tracking
+  - name: API Keys
+    description: API key management (Pro only)
+  - name: Status
+    description: Health checks
+
+paths:
+  /api/status:
+    get:
+      tags: [Status]
+      summary: Health check
+      description: Check if the local daemon is running. No authentication required.
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  uptime:
+                    type: number
+                    example: 3600
+
+  /status:
+    get:
+      tags: [Status]
+      summary: Discovery server status
+      responses:
+        '200':
+          description: Server status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  features:
+                    type: array
+                    items:
+                      type: string
+
+  /api/identity:
+    get:
+      tags: [Identity]
+      summary: Get current identity
+      description: Returns the identity of the local daemon user.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Identity info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+
+  /resolve/{handle}:
+    get:
+      tags: [Identity]
+      summary: Resolve handle to public key
+      description: Look up a user's public key by their @handle. Response is cryptographically signed by the discovery server.
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema:
+            type: string
+          example: alice
+      responses:
+        '200':
+          description: Resolved identity
+          headers:
+            X-Server-Signature:
+              schema:
+                type: string
+              description: Ed25519 signature of the response body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicKey:
+                    type: string
+                  publicKeys:
+                    type: array
+                    items:
+                      type: string
+                  verified:
+                    type: boolean
+        '404':
+          description: Handle not found
+
+  /devices/{handle}:
+    get:
+      tags: [Identity]
+      summary: List devices for a handle
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Device list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handle:
+                    type: string
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+
+  /api/shares:
+    get:
+      tags: [Shares]
+      summary: List all shares
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of shares
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Share'
+    post:
+      tags: [Shares]
+      summary: Create a new share
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path:
+                  type: string
+                  description: Absolute path to file or folder
+                  example: /home/user/documents
+                visibility:
+                  type: string
+                  enum: [global, private]
+                  default: private
+                recipients:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of @handles or public keys
+                  example: ["@alice", "@bob"]
+                password:
+                  type: string
+                  description: Optional password protection
+      responses:
+        '201':
+          description: Share created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Share'
+
+  /api/shares/{shareId}:
+    delete:
+      tags: [Shares]
+      summary: Revoke a share
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: shareId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Share revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /api/transfers:
+    get:
+      tags: [Transfers]
+      summary: List all transfers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of transfers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transfer'
+
+  /api/downloads:
+    post:
+      tags: [Transfers]
+      summary: Start a download
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [magnet]
+              properties:
+                magnet:
+                  type: string
+                  description: Magnet URI
+                name:
+                  type: string
+                savePath:
+                  type: string
+                encryptedShareKey:
+                  type: string
+      responses:
+        '202':
+          description: Download started
+
+  /api/stats:
+    get:
+      tags: [Transfers]
+      summary: Get torrent client statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Transfer statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadSpeed:
+                    type: number
+                    description: Bytes per second
+                  downloadSpeed:
+                    type: number
+                  torrents:
+                    type: array
+                    items:
+                      type: object
+
+  /messages:
+    post:
+      tags: [Chat]
+      summary: Send a message
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toHandle, payload]
+              properties:
+                toHandle:
+                  type: string
+                  example: alice
+                toDeviceId:
+                  type: string
+                fromHandle:
+                  type: string
+                payload:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      example: chat
+                    text:
+                      type: string
+                    timestamp:
+                      type: number
+      responses:
+        '200':
+          description: Message sent
+        '429':
+          description: Inbox full
+
+  /messages/{handle}:
+    get:
+      tags: [Chat]
+      summary: Retrieve messages
+      description: Messages are deleted from server after retrieval.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: deviceId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Array of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /api/v1/presence/{handle}:
+    get:
+      tags: [Presence]
+      summary: Check if a user is online
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Presence status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Presence'
+
+  /api/v1/heartbeat:
+    post:
+      tags: [Presence]
+      summary: Send device heartbeat
+      description: Call every 60 seconds to keep device marked as online.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [handle, deviceId]
+              properties:
+                handle:
+                  type: string
+                deviceId:
+                  type: string
+      responses:
+        '200':
+          description: Heartbeat received
+
+  /api/v1/keys:
+    post:
+      tags: [API Keys]
+      summary: Generate API key
+      description: Pro subscription required. Key limits vary by plan.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publicKey]
+              properties:
+                publicKey:
+                  type: string
+                name:
+                  type: string
+                  example: My Bot
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  key:
+                    type: string
+                    example: pk_pro_abc123...
+                  name:
+                    type: string
+                  createdAt:
+                    type: string
+        '403':
+          description: Pro subscription required or key limit reached
+
+  /api/v1/keys/{publicKey}:
+    get:
+      tags: [API Keys]
+      summary: List API keys
+      parameters:
+        - name: publicKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Array of API keys (key values truncated)
+
+  /api/v1/keys/{publicKey}/{keyId}:
+    delete:
+      tags: [API Keys]
+      summary: Revoke an API key
+      parameters:
+        - name: publicKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Key revoked
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Local daemon bearer token (from `pal serve --web`)
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Pro API key (from /api/v1/keys)
+
+  schemas:
+    Identity:
+      type: object
+      properties:
+        publicKey:
+          type: string
+          example: "a1b2c3d4..."
+        name:
+          type: string
+          example: Alice
+        handle:
+          type: string
+          example: alice
+        createdAt:
+          type: string
+          format: date-time
+
+    Share:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+        visibility:
+          type: string
+          enum: [global, private]
+        recipients:
+          type: array
+          items:
+            type: string
+        magnet:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Transfer:
+      type: object
+      properties:
+        name:
+          type: string
+        magnet:
+          type: string
+        savePath:
+          type: string
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+        status:
+          type: string
+          enum: [downloading, seeding, paused, completed]
+        paused:
+          type: boolean
+
+    Device:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        deviceName:
+          type: string
+        status:
+          type: string
+          enum: [online, offline]
+        lastSeen:
+          type: string
+          format: date-time
+
+    Presence:
+      type: object
+      properties:
+        handle:
+          type: string
+        online:
+          type: boolean
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'

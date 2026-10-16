@@ -1,0 +1,28 @@
+{
+  "name": "@palexplorer/sdk",
+  "version": "0.1.0-beta.2",
+  "description": "Official SDK for the Palexplorer P2P file sharing API",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["src/", "dist/", "README.md", "CHANGELOG.md", "LICENSE"],
+  "sideEffects": false,
+  "keywords": ["palexplorer", "p2p", "file-sharing", "sdk", "api"],
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}
