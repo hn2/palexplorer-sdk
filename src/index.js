@@ -17,3 +17,4 @@ export { PalsAPI } from './pals.js';
 export { BillingAPI } from './billing.js';
 export { ShareLinksAPI } from './shareLinks.js';
 export { NetworksAPI } from './networks.js';
+export { AiAPI } from './ai.js';

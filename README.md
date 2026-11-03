@@ -93,6 +93,7 @@ pal.auth        // AuthAPI       — login, logout, TOTP, QR login
 pal.shares      // SharesAPI     — create, list, delete, update shares
 pal.transfers   // TransfersAPI  — download, pause, resume, stats
 pal.chat        // ChatAPI       — send and receive messages
+pal.ai          // AiAPI         — inspect and revoke AI data grants, review memory, AI provider policy
 pal.presence    // PresenceAPI   — online status, heartbeat
 pal.identity    // IdentityAPI   — whoami, resolve handles
 pal.crypto      // CryptoAPI     — Ed25519 sign/verify

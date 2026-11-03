@@ -4,6 +4,12 @@ All notable changes to `@palexplorer/sdk` will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- `AiAPI` (`pal.ai`): list and revoke AI data grants, list and forget AI memories, read and change the AI provider and embeddings policy (palexplorer-extensions#25). Requires a Palexplorer desktop build that serves `/api/ai/*`.
+
 ## [0.1.0-beta.2] — 2026-08-28
 
 ### Fixed

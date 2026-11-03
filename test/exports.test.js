@@ -18,14 +18,14 @@ describe('package exports', () => {
     assert.ok(DiscoveryClient)
   })
 
-  test('all 19 named API modules are exported', async () => {
+  test('all named API modules are exported', async () => {
     const mod = await import('../src/index.js')
     const expected = [
       'PalexplorerClient', 'PalexplorerError', 'DiscoveryClient',
       'AuthAPI', 'SharesAPI', 'TransfersAPI', 'ChatAPI', 'PresenceAPI',
       'IdentityAPI', 'CryptoAPI', 'GroupsAPI', 'CommentsAPI', 'BroadcastAPI',
       'AuditAPI', 'SettingsAPI', 'WorkspacesAPI', 'PalsAPI', 'BillingAPI',
-      'ShareLinksAPI', 'NetworksAPI',
+      'ShareLinksAPI', 'NetworksAPI', 'AiAPI',
     ]
     for (const name of expected) {
       assert.ok(mod[name], `Expected export: ${name}`)
