@@ -15,6 +15,7 @@ import { PalsAPI } from './pals.js';
 import { BillingAPI } from './billing.js';
 import { ShareLinksAPI } from './shareLinks.js';
 import { NetworksAPI } from './networks.js';
+import { AiAPI } from './ai.js';
 
 function validateServerUrl(raw, allowHttp = false) {
   let u;
@@ -59,6 +60,7 @@ export class PalexplorerClient {
     this.billing = new BillingAPI(this);
     this.shareLinks = new ShareLinksAPI(this);
     this.networks = new NetworksAPI(this);
+    this.ai = new AiAPI(this);
   }
 
   async fetchLocal(path, options = {}) {

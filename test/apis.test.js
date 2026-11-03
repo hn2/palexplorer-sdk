@@ -246,3 +246,41 @@ describe('AuditAPI', () => {
     assert.equal(mock.calls[0].opts.method, 'DELETE');
   });
 });
+
+describe('AiAPI', () => {
+  let mock;
+  afterEach(() => { if (mock) mock.restore(); });
+
+  test('listGrants and listMemories unwrap their collections and honor all', async () => {
+    mock = mockFetch({
+      '/api/ai/context': { grants: [{ id: 'g1' }] },
+      '/api/ai/memory': { memories: [{ id: 'm1' }] },
+    });
+    const client = new PalexplorerClient();
+    assert.deepEqual(await client.ai.listGrants(), [{ id: 'g1' }]);
+    assert.deepEqual(await client.ai.listMemories({ all: true }), [{ id: 'm1' }]);
+    assert.equal(new URL(mock.calls[0].url).search, '');
+    assert.equal(new URL(mock.calls[1].url).search, '?all=true');
+  });
+
+  test('revoke and forget use DELETE with an encoded id', async () => {
+    mock = mockFetch({ '*': { revoked: 1 } });
+    const client = new PalexplorerClient();
+    await client.ai.revokeGrant('a/b');
+    await client.ai.revokeAllGrants();
+    await client.ai.forgetMemory('m1');
+    assert.deepEqual(mock.calls.map(c => [c.opts.method, new URL(c.url).pathname]), [
+      ['DELETE', '/api/ai/context/a%2Fb'],
+      ['DELETE', '/api/ai/context'],
+      ['DELETE', '/api/ai/memory/m1'],
+    ]);
+  });
+
+  test('setPolicy posts only the fields given', async () => {
+    mock = mockFetch({ '/api/ai/policy': { cloudOptOut: true } });
+    const client = new PalexplorerClient();
+    await client.ai.setPolicy({ cloudOptOut: true });
+    assert.equal(mock.calls[0].opts.method, 'POST');
+    assert.deepEqual(JSON.parse(mock.calls[0].opts.body), { cloudOptOut: true });
+  });
+});

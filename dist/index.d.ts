@@ -230,3 +230,44 @@ export declare class NetworksAPI {
   join(inviteCode: string): Promise<void>;
   updateMember(networkId: string, userId: string, patch: Record<string, unknown>): Promise<ApiResponse>;
 }
+
+export interface AiGrant {
+  id: string;
+  recipient: string;
+  scopes: string[];
+  sourceId: string | null;
+  createdAt: number;
+  expiresAt: number | null;
+  revokedAt: number | null;
+  revocationReason: string | null;
+  state: 'active' | 'revoked' | 'expired';
+}
+
+export interface AiMemory {
+  id: string;
+  content: string;
+  source: string | null;
+  tags: string[];
+  createdAt: number;
+  retentionUntil: number | null;
+}
+
+export interface AiPolicy {
+  enabled: boolean;
+  cloudOptOut: boolean;
+  localFallback: boolean;
+  embeddingPolicy: 'local-only' | 'encrypted-portable' | 'hybrid';
+  order: Array<{ provider: string; role: string; replaced?: string }>;
+}
+
+export declare class AiAPI {
+  constructor(client: PalexplorerClient);
+  overview(): Promise<{ policy: AiPolicy; scopes: Array<{ scope: string; risk: string; defaultRetentionMs: number }>; activeGrants: number; memories: number }>;
+  listGrants(options?: { all?: boolean }): Promise<AiGrant[]>;
+  revokeGrant(grantId: string): Promise<{ revoked: number }>;
+  revokeAllGrants(): Promise<{ revoked: number }>;
+  listMemories(options?: { all?: boolean }): Promise<AiMemory[]>;
+  forgetMemory(memoryId: string): Promise<{ removed: number }>;
+  getPolicy(): Promise<AiPolicy>;
+  setPolicy(options: { cloudOptOut?: boolean; localFallback?: boolean; embeddingPolicy?: AiPolicy['embeddingPolicy'] }): Promise<AiPolicy>;
+}
