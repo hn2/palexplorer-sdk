@@ -543,6 +543,27 @@ const online = await discovery.presence('alice');
 const health = await discovery.status();
 ```
 
+### Sync / deliver (`pal.sync`, `pal.capabilities/v1`)
+
+Send opaque JSON payloads to a pal or your own device through the local Palexplorer core. The core carries them over
+PAL/3 and owns every key; the receiver gets `from` as the authenticated peer key. Use an app-scoped token, not the
+full local token, and the core's IPC endpoint (`~/.palexplorer/capability-endpoint.json`) when running on Node.js.
+
+```javascript
+// Once, with the full local token: issue a token pinned to your app.
+const admin = new PalexplorerClient({ localToken: fullToken });
+const { token } = await admin.capabilities.issueToken({ app: 'myapp.sync', scopes: ['sync:deliver'] });
+
+const pal = new PalexplorerClient({ localSocket: endpoint.socket, localToken: token });
+await pal.sync.register('myapp.sync');
+await pal.sync.deliver({ app: 'myapp.sync', to: peerPublicKeyHex, payload: { hello: 'world' } });
+const stop = pal.sync.subscribe('myapp.sync', (msg) => console.log(msg.from, msg.payload));
+await stop();
+```
+
+Errors carry `err.body.code`: `E_APP_INVALID` (400), `E_APP_FORBIDDEN` (403), `E_APP_UNKNOWN` (409, the receiver has
+no such app), `E_APP_TOO_LARGE` (413), `E_APP_UNREACHABLE` (502).
+
 ## Error Handling
 
 ```javascript
