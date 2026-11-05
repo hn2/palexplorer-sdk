@@ -16,6 +16,7 @@ import { BillingAPI } from './billing.js';
 import { ShareLinksAPI } from './shareLinks.js';
 import { NetworksAPI } from './networks.js';
 import { AiAPI } from './ai.js';
+import { SyncAPI, CapabilitiesAPI } from './sync.js';
 
 import { PalexplorerError } from './errors.js';
 export { PalexplorerError };
@@ -46,6 +47,9 @@ export class PalexplorerClient {
       throw new TypeError("localRoutes must be 'stock' or 'extended'");
     }
     this.localRoutes = options.localRoutes || (options.localServer ? 'extended' : 'stock');
+    // Local IPC endpoint of the core (named pipe on Windows, unix socket elsewhere; Node.js only). When set, local calls
+    // go over it instead of loopback TCP: same API, far lower per-request cost.
+    this.localSocket = typeof options.localSocket === 'string' && options.localSocket ? options.localSocket : null;
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout
       : 10000;
@@ -68,16 +72,24 @@ export class PalexplorerClient {
     this.shareLinks = new ShareLinksAPI(this);
     this.networks = new NetworksAPI(this);
     this.ai = new AiAPI(this);
+    this.sync = new SyncAPI(this);
+    this.capabilities = new CapabilitiesAPI(this);
   }
 
   async fetchLocal(path, options = {}) {
     const url = `${this.localServer}${path}`;
-    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    const { timeoutMs, signal, ...fetchOptions } = options;
+    const headers = { 'Content-Type': 'application/json', ...fetchOptions.headers };
     if (this.localToken) headers['Authorization'] = `Bearer ${this.localToken}`;
+    if (this.localSocket) {
+      const res = await requestOverSocket(this, path, { ...fetchOptions, headers, timeoutMs: timeoutMs || this.timeout, signal });
+      if (res.status < 200 || res.status >= 300) throw new PalexplorerError(res.body.error || `HTTP ${res.status}`, res.status, res.body);
+      return res.body;
+    }
     const res = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       headers,
-      signal: AbortSignal.timeout(this.timeout),
+      signal: combineSignals(signal, AbortSignal.timeout(timeoutMs || this.timeout)),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
@@ -107,3 +119,54 @@ export class PalexplorerClient {
   }
 }
 
+function combineSignals(...signals) {
+  const active = signals.filter(Boolean);
+  if (active.length === 1) return active[0];
+  if (typeof AbortSignal.any === 'function') return AbortSignal.any(active);
+  const controller = new AbortController();
+  for (const sig of active) {
+    if (sig.aborted) { controller.abort(sig.reason); break; }
+    sig.addEventListener('abort', () => controller.abort(sig.reason), { once: true });
+  }
+  return controller.signal;
+}
+
+// The bearer token must only go to a socket owned by the current user. On unix this is checked; Windows named pipes
+// cannot be checked from here, so never point localSocket at a path another user can create.
+async function assertTrustedSocket(path) {
+  if (process.platform === 'win32') return;
+  const fs = await import('node:fs');
+  const st = fs.statSync(path);
+  if (!st.isSocket()) throw new PalexplorerError(`localSocket ${path} is not a socket`, 0, {});
+  if (typeof process.getuid === 'function' && st.uid !== process.getuid()) {
+    throw new PalexplorerError(`localSocket ${path} is owned by another user; refusing to send the local token`, 0, {});
+  }
+}
+
+async function requestOverSocket(client, path, { method = 'GET', headers, body, timeoutMs, signal }) {
+  const http = await import('node:http');
+  await assertTrustedSocket(client.localSocket);
+  client._socketAgent ||= new http.Agent({ keepAlive: true });
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (fn, value) => { if (settled) return; settled = true; clearTimeout(deadline); fn(value); };
+    const req = http.request({ socketPath: client.localSocket, path, method, headers, agent: client._socketAgent, signal }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        let parsed;
+        try { parsed = JSON.parse(text); } catch { parsed = undefined; }
+        if (parsed === undefined && res.statusCode >= 200 && res.statusCode < 300) {
+          finish(reject, new PalexplorerError(`${path} returned a malformed or empty response over IPC`, res.statusCode, { notJson: true }));
+          return;
+        }
+        finish(resolve, { status: res.statusCode, body: parsed ?? {} });
+      });
+      res.on('error', (err) => finish(reject, err));
+    });
+    const deadline = setTimeout(() => { req.destroy(new Error('The operation was aborted due to timeout')); }, timeoutMs);
+    req.on('error', (err) => finish(reject, err));
+    req.end(body);
+  });
+}

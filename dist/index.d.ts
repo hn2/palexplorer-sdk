@@ -2,6 +2,8 @@
 // @palexplorer/sdk@0.1.0-beta.2
 
 export interface ClientOptions {
+  /** Core IPC endpoint (named pipe / unix socket path; Node.js only). Preferred over localServer when set. */
+  localSocket?: string;
   apiKey?: string;
   discoveryServer?: string;
   localServer?: string;
@@ -51,8 +53,10 @@ export declare class PalexplorerClient {
   billing: BillingAPI;
   shareLinks: ShareLinksAPI;
   networks: NetworksAPI;
+  sync: SyncAPI;
+  capabilities: CapabilitiesAPI;
   constructor(options?: ClientOptions);
-  fetchLocal<T = ApiResponse>(path: string, options?: RequestInit): Promise<T>;
+  fetchLocal<T = ApiResponse>(path: string, options?: RequestInit & { timeoutMs?: number; signal?: AbortSignal }): Promise<T>;
   fetchDiscovery<T = ApiResponse>(path: string, options?: RequestInit): Promise<T>;
 }
 
@@ -307,4 +311,21 @@ export declare class AiAPI {
   forgetMemory(memoryId: string): Promise<{ removed: number }>;
   getPolicy(): Promise<AiPolicy>;
   setPolicy(options: { cloudOptOut?: boolean; localFallback?: boolean; embeddingPolicy?: AiPolicy['embeddingPolicy'] }): Promise<AiPolicy>;
+}
+
+export interface SyncMessage { id: string; from: string; app: string; payload: unknown; receivedAt: string; }
+export interface SyncPeer { publicKey: string; kind: 'pal' | 'device'; name: string; online: boolean; }
+
+export declare class SyncAPI {
+  capabilities(): Promise<{ schema: 'pal.capabilities/v1'; capabilities: { name: string; methods: string[] }[]; self: { publicKey: string }; app: string | null }>;
+  register(app: string): Promise<{ ok: true }>;
+  deliver(options: { app: string; to: string; payload: unknown; idempotencyKey?: string }): Promise<{ ok: true; id: string }>;
+  receive(options: { app: string; waitMs?: number; limit?: number; signal?: AbortSignal }): Promise<SyncMessage[]>;
+  peers(): Promise<{ self: { publicKey: string }; peers: SyncPeer[] }>;
+  subscribe(app: string, onMessage: (msg: SyncMessage) => unknown, options?: { waitMs?: number; retryMs?: number; maxRetryMs?: number; maxFailures?: number; onError?: (err: Error) => void }): () => Promise<void>;
+}
+
+export declare class CapabilitiesAPI {
+  issueToken(options: { app: string; scopes?: 'sync:deliver'[] }): Promise<{ token: string; app: string; scopes: string[] }>;
+  revokeTokens(app: string): Promise<{ revoked: number }>;
 }
