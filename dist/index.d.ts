@@ -51,6 +51,7 @@ export declare class PalexplorerClient {
   billing: BillingAPI;
   shareLinks: ShareLinksAPI;
   networks: NetworksAPI;
+  ai: AiAPI;
   constructor(options?: ClientOptions);
   fetchLocal<T = ApiResponse>(path: string, options?: RequestInit): Promise<T>;
   fetchDiscovery<T = ApiResponse>(path: string, options?: RequestInit): Promise<T>;

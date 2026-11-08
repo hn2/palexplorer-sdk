@@ -33,6 +33,15 @@ describe('dist/index.d.ts matches the runtime API (#17)', () => {
     assert.deepEqual(problems, []);
   });
 
+  test('every API module the client exposes is a declared property of PalexplorerClient', () => {
+    const body = classBody('PalexplorerClient');
+    const missing = Object.entries(client)
+      .filter(([, v]) => v && typeof v === 'object' && /API$/.test(v.constructor.name))
+      .map(([k]) => k)
+      .filter((k) => !new RegExp(String.raw`^\s+${k}: \w+API;`, 'm').test(body));
+    assert.deepEqual(missing, []);
+  });
+
   test('ClientOptions declares localRoutes and the client exposes it', () => {
     assert.match(dts, /localRoutes\?: 'stock' \| 'extended'/);
     assert.equal(client.localRoutes, 'stock');
