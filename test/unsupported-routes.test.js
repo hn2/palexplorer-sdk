@@ -63,3 +63,40 @@ describe('methods without a daemon route fail loudly (#17)', () => {
     assert.deepEqual(urls, [['/api/groups', 'GET'], ['/api/groups/g1/members', 'POST'], ['/api/groups/g1/members/p1', 'DELETE']]);
   });
 });
+
+describe('a custom local daemon is honored (#17, Codex note on #19)', () => {
+  const original = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = original; });
+
+  test('a client with its own localServer sends the request for methods the stock daemon lacks', async () => {
+    const seen = [];
+    globalThis.fetch = async (url, init) => {
+      seen.push([init.method || 'GET', url]);
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+    };
+    const c = new PalexplorerClient({ localServer: 'http://127.0.0.1:9000' });
+    assert.equal(c.localRoutes, 'extended');
+    await c.settings.get();
+    await c.settings.update({ theme: 'dark' });
+    await c.workspaces.activate('w1');
+    await c.transfers.files('magnet:?x');
+    assert.deepEqual(seen.map(([m, u]) => `${m} ${new URL(u).pathname}`), [
+      'GET /api/settings', 'PATCH /api/settings', 'POST /api/workspaces/w1/activate', 'GET /api/transfers/magnet%3A%3Fx/files',
+    ]);
+  });
+
+  test('localRoutes: stock keeps the 501 even with a custom server, and bad values are rejected', async () => {
+    let called = false;
+    globalThis.fetch = async () => { called = true; return new Response('{}'); };
+    const c = new PalexplorerClient({ localServer: 'http://127.0.0.1:9000', localRoutes: 'stock' });
+    await assert.rejects(() => c.settings.get(), (err) => err.status === 501);
+    assert.equal(called, false);
+    assert.throws(() => new PalexplorerClient({ localRoutes: 'nope' }), TypeError);
+  });
+
+  test('an HTML fallback page is reported as a missing route, not as a JSON parse crash', async () => {
+    globalThis.fetch = async () => new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html' } });
+    const c = new PalexplorerClient({ localServer: 'http://127.0.0.1:9000' });
+    await assert.rejects(() => c.settings.get(), (err) => err instanceof PalexplorerError && err.body.notJson === true);
+  });
+});

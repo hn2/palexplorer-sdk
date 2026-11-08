@@ -1,4 +1,4 @@
-import { unsupported } from './unsupported.js';
+import { routeOr } from './unsupported.js';
 
 export class GroupsAPI {
   constructor(client) { this.client = client; }
@@ -37,6 +37,11 @@ export class GroupsAPI {
   }
 
   async broadcast(groupId, message) {
-    unsupported('groups.broadcast');
+    return routeOr(this.client, 'groups.broadcast', async () => {
+      return this.client.fetchLocal(`/api/pals/groups/${encodeURIComponent(groupId)}/broadcast`, {
+        method: 'POST',
+        body: JSON.stringify({ message }),
+      });
+    });
   }
 }

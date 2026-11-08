@@ -7,6 +7,12 @@ export interface ClientOptions {
   localServer?: string;
   localToken?: string;
   timeout?: number;
+  /**
+   * Which routes the local daemon serves. 'stock' (default, and the default when `localServer` is not set) is the
+   * daemon shipped with Palexplorer, which has no route for some methods; those reject with a 501 PalexplorerError.
+   * 'extended' (default when `localServer` is set) sends every request to your own daemon.
+   */
+  localRoutes?: 'stock' | 'extended';
 }
 
 export interface ApiResponse<T = unknown> {
@@ -26,6 +32,7 @@ export declare class PalexplorerClient {
   discoveryServer: string;
   localServer: string;
   localToken: string | null;
+  localRoutes: 'stock' | 'extended';
   timeout: number;
   auth: AuthAPI;
   shares: SharesAPI;
@@ -63,14 +70,20 @@ export declare class DiscoveryClient {
 export declare class AuthAPI {
   constructor(client: PalexplorerClient);
   status(): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   me(): Promise<ApiResponse>;
   login(options: { username: string; password: string; totpCode?: string }): Promise<ApiResponse>;
   logout(): Promise<void>;
   refresh(): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   setupTotp(): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   verifyTotp(code: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   disableTotp(password: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   initQr(): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   pollQr(sessionId: string): Promise<ApiResponse>;
 }
 
@@ -96,7 +109,9 @@ export declare class TransfersAPI {
   pause(magnet: string): Promise<void>;
   resume(magnet: string): Promise<void>;
   cancel(magnet: string): Promise<void>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   files(magnet: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   downloadSelected(magnet: string, options: { fileIndices: number[]; destDir?: string }): Promise<ApiResponse>;
 }
 
@@ -133,6 +148,7 @@ export declare class GroupsAPI {
   delete(groupId: string): Promise<void>;
   addMember(groupId: string, palId: string): Promise<void>;
   removeMember(groupId: string, palId: string): Promise<void>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   broadcast(groupId: string, message: unknown): Promise<ApiResponse>;
 }
 
@@ -145,21 +161,29 @@ export declare class CommentsAPI {
 
 export declare class BroadcastAPI {
   constructor(client: PalexplorerClient);
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   toGroup(groupId: string, message: string): Promise<{ success: boolean; sent: number }>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   start(data: Record<string, unknown>): Promise<void>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   stop(): Promise<void>;
 }
 
 export declare class AuditAPI {
   constructor(client: PalexplorerClient);
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   list(options?: { limit?: number; offset?: number }): Promise<ApiResponse[]>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   export(): Promise<ApiResponse[]>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   clear(): Promise<void>;
 }
 
 export declare class SettingsAPI {
   constructor(client: PalexplorerClient);
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   get(): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   update(options?: {
     theme?: string;
     language?: string;
@@ -167,18 +191,27 @@ export declare class SettingsAPI {
     notifications?: boolean;
     analyticsEnabled?: boolean;
   }): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   listApiKeys(): Promise<ApiResponse[]>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   createApiKey(name: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   revokeApiKey(id: string): Promise<void>;
 }
 
 export declare class WorkspacesAPI {
   constructor(client: PalexplorerClient);
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   list(): Promise<ApiResponse[]>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   create(name: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   delete(id: string): Promise<void>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   activate(id: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   addShare(id: string, shareId: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   removeShare(id: string, shareId: string): Promise<void>;
 }
 
@@ -198,9 +231,13 @@ export declare class BillingAPI {
   constructor(client: PalexplorerClient);
   status(): Promise<ApiResponse>;
   validate(publicKey: string): Promise<ApiResponse>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   createCheckout(options?: { plan?: string; successUrl?: string; cancelUrl?: string }): Promise<{ url: string }>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   createPortalSession(): Promise<{ url: string }>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   activateLicense(licenseKey: string): Promise<void>;
+  /** Not served by the stock local daemon: rejects with PalexplorerError 501 unless `localRoutes: 'extended'`. */
   deactivateLicense(licenseKey: string): Promise<void>;
 }
 

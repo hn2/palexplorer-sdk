@@ -111,7 +111,7 @@ pal.networks    // NetworksAPI   — private networks, invite codes, member mana
 
 ### Methods the local daemon cannot serve yet
 
-These methods reject with `PalexplorerError` (status 501) without sending a request, because `pal serve --web` exposes no matching route: `auth.me`, `auth.setupTotp`, `auth.verifyTotp`, `auth.disableTotp`, `auth.initQr`, `auth.pollQr`, `billing.createCheckout`, `billing.createPortalSession`, `billing.activateLicense`, `billing.deactivateLicense`, all of `broadcast`, all of `settings`, all of `audit`, all of `workspaces`, `groups.broadcast`, `transfers.files`, `transfers.downloadSelected`.
+These methods reject with `PalexplorerError` (status 501) without sending a request when the client talks to the stock daemon (`pal serve --web`), because it exposes no matching route. A client created with its own `localServer` sends them (set `localRoutes: 'stock'` to keep the 501, or `localRoutes: 'extended'` to force the request): `auth.me`, `auth.setupTotp`, `auth.verifyTotp`, `auth.disableTotp`, `auth.initQr`, `auth.pollQr`, `billing.createCheckout`, `billing.createPortalSession`, `billing.activateLicense`, `billing.deactivateLicense`, all of `broadcast`, all of `settings`, all of `audit`, all of `workspaces`, `groups.broadcast`, `transfers.files`, `transfers.downloadSelected`.
 
 Internal methods (used by sub-APIs):
 - `fetchLocal(path, options)` -- fetch from local daemon with Bearer auth

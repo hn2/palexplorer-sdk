@@ -1,4 +1,4 @@
-import { unsupported } from './unsupported.js';
+import { routeOr } from './unsupported.js';
 
 export class BillingAPI {
   constructor(client) { this.client = client; }
@@ -12,18 +12,37 @@ export class BillingAPI {
   }
 
   async createCheckout({ plan, successUrl, cancelUrl } = {}) {
-    unsupported('billing.createCheckout');
+    return routeOr(this.client, 'billing.createCheckout', async () => {
+      return this.client.fetchLocal('/api/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan, successUrl, cancelUrl }),
+      });
+    });
   }
 
   async createPortalSession() {
-    unsupported('billing.createPortalSession');
+    return routeOr(this.client, 'billing.createPortalSession', async () => {
+      return this.client.fetchLocal('/api/billing/portal', {
+        method: 'POST',
+      });
+    });
   }
 
   async activateLicense(licenseKey) {
-    unsupported('billing.activateLicense');
+    return routeOr(this.client, 'billing.activateLicense', async () => {
+      return this.client.fetchLocal('/api/billing/license/activate', {
+        method: 'POST',
+        body: JSON.stringify({ licenseKey }),
+      });
+    });
   }
 
   async deactivateLicense(licenseKey) {
-    unsupported('billing.deactivateLicense');
+    return routeOr(this.client, 'billing.deactivateLicense', async () => {
+      return this.client.fetchLocal('/api/billing/license/deactivate', {
+        method: 'POST',
+        body: JSON.stringify({ licenseKey }),
+      });
+    });
   }
 }

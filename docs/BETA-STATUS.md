@@ -20,7 +20,8 @@
   - chat, broadcast, presence
   - comments, audit, settings, workspaces
   - billing, crypto
-  - Not served by the current local daemon (reject with 501): auth.me/TOTP/QR, billing checkout/portal/license, broadcast, settings, audit, workspaces, groups.broadcast, transfers.files/downloadSelected
+  - Not served by the stock local daemon (reject with 501 unless the client is created with its own `localServer` or `localRoutes: 'extended'`): auth.me/TOTP/QR, billing checkout/portal/license, broadcast, settings, audit, workspaces, groups.broadcast, transfers.files/downloadSelected
+  - `dist/index.d.ts` is checked against the runtime modules by `test/types-parity.test.js`; `docs/openapi.yaml` documents only routes the stock daemon serves
 - **Zero dependencies**: Ships with no npm dependencies, fully self-contained
 - **TypeScript types**: `dist/index.d.ts` shipped alongside the package
 - **Published to npm**: `@palexplorer/sdk@0.1.0-beta.1` live on the npm registry

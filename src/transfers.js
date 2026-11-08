@@ -1,4 +1,4 @@
-import { unsupported } from './unsupported.js';
+import { routeOr } from './unsupported.js';
 
 export class TransfersAPI {
   constructor(client) { this.client = client; }
@@ -37,10 +37,17 @@ export class TransfersAPI {
   }
 
   async files(magnet) {
-    unsupported('transfers.files');
+    return routeOr(this.client, 'transfers.files', async () => {
+      return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/files`);
+    });
   }
 
   async downloadSelected(magnet, { fileIndices, destDir }) {
-    unsupported('transfers.downloadSelected');
+    return routeOr(this.client, 'transfers.downloadSelected', async () => {
+      return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/download-selected`, {
+        method: 'POST',
+        body: JSON.stringify({ fileIndices, destDir }),
+      });
+    });
   }
 }
