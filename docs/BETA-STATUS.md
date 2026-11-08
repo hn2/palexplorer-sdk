@@ -29,8 +29,8 @@
 
 ## Gaps
 
-- **Examples potentially stale**: 4 example files exist but have not been re-verified against the current module APIs since the beta release
-- **No README usage examples** for the newer modules (billing, crypto, shareLinks, networks, broadcast)
+- **Examples are statically checked only**: `test/docs-examples.test.js` verifies every `pal.<module>.<method>()` call in the README and examples exists and that examples parse; they are not run against a daemon
+- README has a usage section for every module (billing, crypto, shareLinks, networks, broadcast included)
 
 ---
 
