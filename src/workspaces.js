@@ -1,29 +1,53 @@
-import { unsupported } from './unsupported.js';
+import { routeOr } from './unsupported.js';
 
 export class WorkspacesAPI {
   constructor(client) { this.client = client; }
 
   async list() {
-    unsupported('workspaces.list');
+    return routeOr(this.client, 'workspaces.list', async () => {
+      return this.client.fetchLocal('/api/workspaces');
+    });
   }
 
   async create(name) {
-    unsupported('workspaces.create');
+    return routeOr(this.client, 'workspaces.create', async () => {
+      return this.client.fetchLocal('/api/workspaces', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+    });
   }
 
   async delete(id) {
-    unsupported('workspaces.delete');
+    return routeOr(this.client, 'workspaces.delete', async () => {
+      return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+    });
   }
 
   async activate(id) {
-    unsupported('workspaces.activate');
+    return routeOr(this.client, 'workspaces.activate', async () => {
+      return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}/activate`, {
+        method: 'POST',
+      });
+    });
   }
 
   async addShare(id, shareId) {
-    unsupported('workspaces.addShare');
+    return routeOr(this.client, 'workspaces.addShare', async () => {
+      return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}/shares`, {
+        method: 'POST',
+        body: JSON.stringify({ shareId }),
+      });
+    });
   }
 
   async removeShare(id, shareId) {
-    unsupported('workspaces.removeShare');
+    return routeOr(this.client, 'workspaces.removeShare', async () => {
+      return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}/shares/${encodeURIComponent(shareId)}`, {
+        method: 'DELETE',
+      });
+    });
   }
 }

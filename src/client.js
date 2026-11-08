@@ -42,6 +42,10 @@ export class PalexplorerClient {
     this.discoveryServer = validateServerUrl(options.discoveryServer || 'https://discovery.palexplorer.com');
     this.localServer = validateServerUrl(options.localServer || 'http://localhost:8585', true);
     this.localToken = options.localToken || null;
+    if (options.localRoutes !== undefined && options.localRoutes !== 'stock' && options.localRoutes !== 'extended') {
+      throw new TypeError("localRoutes must be 'stock' or 'extended'");
+    }
+    this.localRoutes = options.localRoutes || (options.localServer ? 'extended' : 'stock');
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout
       : 10000;
@@ -79,7 +83,11 @@ export class PalexplorerClient {
       const body = await res.json().catch(() => ({}));
       throw new PalexplorerError(body.error || `HTTP ${res.status}`, res.status, body);
     }
-    return res.json();
+    try {
+      return await res.json();
+    } catch {
+      throw new PalexplorerError(`${path} did not return JSON; the local daemon probably has no such route`, res.status || 502, { notJson: true });
+    }
   }
 
   async fetchDiscovery(path, options = {}) {
