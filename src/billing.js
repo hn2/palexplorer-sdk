@@ -1,3 +1,5 @@
+import { unsupported } from './unsupported.js';
+
 export class BillingAPI {
   constructor(client) { this.client = client; }
 
@@ -10,29 +12,18 @@ export class BillingAPI {
   }
 
   async createCheckout({ plan, successUrl, cancelUrl } = {}) {
-    return this.client.fetchLocal('/api/billing/checkout', {
-      method: 'POST',
-      body: JSON.stringify({ plan, successUrl, cancelUrl }),
-    });
+    unsupported('billing.createCheckout');
   }
 
   async createPortalSession() {
-    return this.client.fetchLocal('/api/billing/portal', {
-      method: 'POST',
-    });
+    unsupported('billing.createPortalSession');
   }
 
   async activateLicense(licenseKey) {
-    return this.client.fetchLocal('/api/billing/license/activate', {
-      method: 'POST',
-      body: JSON.stringify({ licenseKey }),
-    });
+    unsupported('billing.activateLicense');
   }
 
   async deactivateLicense(licenseKey) {
-    return this.client.fetchLocal('/api/billing/license/deactivate', {
-      method: 'POST',
-      body: JSON.stringify({ licenseKey }),
-    });
+    unsupported('billing.deactivateLicense');
   }
 }

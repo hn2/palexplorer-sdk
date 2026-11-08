@@ -41,7 +41,7 @@ describe('TransfersAPI', () => {
   });
 
   test('stats fetches /api/stats', async () => {
-    mock = mockFetch({ '/api/transfers/stats': { total: 5, active: 2 } });
+    mock = mockFetch({ '/api/stats': { total: 5, active: 2 } });
     const client = new PalexplorerClient();
     const result = await client.transfers.stats();
     assert.equal(result.total, 5);
@@ -172,78 +172,6 @@ describe('CommentsAPI', () => {
     const client = new PalexplorerClient();
     await client.comments.list('a b');
     assert.ok(mock.calls[0].url.includes('a%20b'));
-  });
-});
-
-describe('BroadcastAPI', () => {
-  let mock;
-  afterEach(() => { if (mock) mock.restore(); });
-
-  test('toGroup sends POST with message', async () => {
-    mock = mockFetch({ '/api/pals/groups/g1/broadcast': { ok: true, sent: 5 } });
-    const client = new PalexplorerClient();
-    const result = await client.broadcast.toGroup('g1', 'hello team');
-    assert.equal(mock.calls[0].opts.method, 'POST');
-    const body = JSON.parse(mock.calls[0].opts.body);
-    assert.equal(body.message, 'hello team');
-    assert.equal(result.sent, 5);
-  });
-
-  test('start sends broadcast data', async () => {
-    mock = mockFetch({ '/api/broadcast/start': { ok: true } });
-    const client = new PalexplorerClient();
-    await client.broadcast.start({ shareId: 's1', port: 6881 });
-    assert.equal(mock.calls[0].opts.method, 'POST');
-    const body = JSON.parse(mock.calls[0].opts.body);
-    assert.equal(body.shareId, 's1');
-  });
-
-  test('stop sends POST', async () => {
-    mock = mockFetch({ '/api/broadcast/stop': { ok: true } });
-    const client = new PalexplorerClient();
-    await client.broadcast.stop();
-    assert.equal(mock.calls[0].opts.method, 'POST');
-  });
-});
-
-describe('AuditAPI', () => {
-  let mock;
-  afterEach(() => { if (mock) mock.restore(); });
-
-  test('list fetches audit log', async () => {
-    mock = mockFetch({ '/api/settings/audit-log': { entries: [{ action: 'download' }] } });
-    const client = new PalexplorerClient();
-    const result = await client.audit.list();
-    assert.equal(result.entries[0].action, 'download');
-  });
-
-  test('list passes limit and offset', async () => {
-    mock = mockFetch({ '*': { entries: [] } });
-    const client = new PalexplorerClient();
-    await client.audit.list({ limit: 10, offset: 20 });
-    assert.ok(mock.calls[0].url.includes('limit=10'));
-    assert.ok(mock.calls[0].url.includes('offset=20'));
-  });
-
-  test('list omits empty params', async () => {
-    mock = mockFetch({ '/api/settings/audit-log': { entries: [] } });
-    const client = new PalexplorerClient();
-    await client.audit.list();
-    assert.ok(!mock.calls[0].url.includes('?'));
-  });
-
-  test('export fetches with format=json', async () => {
-    mock = mockFetch({ '*': { entries: [] } });
-    const client = new PalexplorerClient();
-    await client.audit.export();
-    assert.ok(mock.calls[0].url.includes('format=json'));
-  });
-
-  test('clear sends DELETE', async () => {
-    mock = mockFetch({ '/api/settings/audit-log': { ok: true } });
-    const client = new PalexplorerClient();
-    await client.audit.clear();
-    assert.equal(mock.calls[0].opts.method, 'DELETE');
   });
 });
 

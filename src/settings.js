@@ -1,31 +1,25 @@
+import { unsupported } from './unsupported.js';
+
 export class SettingsAPI {
   constructor(client) { this.client = client; }
 
   async get() {
-    return this.client.fetchLocal('/api/settings');
+    unsupported('settings.get');
   }
 
   async update({ theme, language, autoConnect, notifications, analyticsEnabled } = {}) {
-    return this.client.fetchLocal('/api/settings', {
-      method: 'PATCH',
-      body: JSON.stringify({ theme, language, autoConnect, notifications, analyticsEnabled }),
-    });
+    unsupported('settings.update');
   }
 
   async listApiKeys() {
-    return this.client.fetchLocal('/api/settings/api-keys');
+    unsupported('settings.listApiKeys');
   }
 
   async createApiKey(name) {
-    return this.client.fetchLocal('/api/settings/api-keys', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
+    unsupported('settings.createApiKey');
   }
 
   async revokeApiKey(id) {
-    return this.client.fetchLocal(`/api/settings/api-keys/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
+    unsupported('settings.revokeApiKey');
   }
 }

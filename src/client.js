@@ -17,6 +17,9 @@ import { ShareLinksAPI } from './shareLinks.js';
 import { NetworksAPI } from './networks.js';
 import { AiAPI } from './ai.js';
 
+import { PalexplorerError } from './errors.js';
+export { PalexplorerError };
+
 function validateServerUrl(raw, allowHttp = false) {
   let u;
   try {
@@ -96,11 +99,3 @@ export class PalexplorerClient {
   }
 }
 
-export class PalexplorerError extends Error {
-  constructor(message, status, body) {
-    super(message);
-    this.name = 'PalexplorerError';
-    this.status = status;
-    Object.defineProperty(this, 'body', { value: body, enumerable: false, writable: false });
-  }
-}

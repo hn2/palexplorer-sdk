@@ -20,6 +20,7 @@
   - chat, broadcast, presence
   - comments, audit, settings, workspaces
   - billing, crypto
+  - Not served by the current local daemon (reject with 501): auth.me/TOTP/QR, billing checkout/portal/license, broadcast, settings, audit, workspaces, groups.broadcast, transfers.files/downloadSelected
 - **Zero dependencies**: Ships with no npm dependencies, fully self-contained
 - **TypeScript types**: `dist/index.d.ts` shipped alongside the package
 - **Published to npm**: `@palexplorer/sdk@0.1.0-beta.1` live on the npm registry

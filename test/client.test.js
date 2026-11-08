@@ -168,15 +168,15 @@ describe('GroupsAPI', () => {
   let mock;
   afterEach(() => { if (mock) mock.restore(); });
 
-  test('list calls /api/pals/groups', async () => {
-    mock = mockFetch({ '/api/pals/groups': { groups: [] } });
+  test('list calls /api/groups', async () => {
+    mock = mockFetch({ '/api/groups': { groups: [] } });
     const client = new PalexplorerClient();
     const result = await client.groups.list();
     assert.ok(result.groups);
   });
 
   test('create sends group name', async () => {
-    mock = mockFetch({ '/api/pals/groups': { id: 'g1', name: 'Team' } });
+    mock = mockFetch({ '/api/groups': { id: 'g1', name: 'Team' } });
     const client = new PalexplorerClient();
     await client.groups.create('Team');
     const body = JSON.parse(mock.calls[0].opts.body);
@@ -184,21 +184,21 @@ describe('GroupsAPI', () => {
   });
 
   test('delete sends DELETE', async () => {
-    mock = mockFetch({ '/api/pals/groups/g1': { ok: true } });
+    mock = mockFetch({ '/api/groups/g1': { ok: true } });
     const client = new PalexplorerClient();
     await client.groups.delete('g1');
     assert.equal(mock.calls[0].opts.method, 'DELETE');
   });
 
   test('addMember sends POST', async () => {
-    mock = mockFetch({ '/api/pals/groups/g1/members': { ok: true } });
+    mock = mockFetch({ '/api/groups/g1/members': { ok: true } });
     const client = new PalexplorerClient();
     await client.groups.addMember('g1', { id: 'p1', name: 'Bob' });
     assert.equal(mock.calls[0].opts.method, 'POST');
   });
 
   test('removeMember sends DELETE', async () => {
-    mock = mockFetch({ '/api/pals/groups/g1/members/p1': { ok: true } });
+    mock = mockFetch({ '/api/groups/g1/members/p1': { ok: true } });
     const client = new PalexplorerClient();
     await client.groups.removeMember('g1', 'p1');
     assert.equal(mock.calls[0].opts.method, 'DELETE');
