@@ -565,6 +565,8 @@ const stop = pal.sync.subscribe('myapp.sync', (msg) => console.log(msg.from, msg
 await stop();
 ```
 
+Notes: the bearer token is sent to whatever listens on `localSocket`, so only use the path the core reported. On unix the SDK refuses a socket owned by another user; on Windows a named pipe cannot be checked, so never use a pipe name another user could create. `deliver` sends an `Idempotency-Key` (pass `idempotencyKey` to reuse one on retry; the core must deduplicate). `subscribe` backs off exponentially (`retryMs` up to `maxRetryMs`), reports errors to `onError` (default: `console.warn`), stops after `maxFailures` consecutive failures, and `stop()` may be awaited inside `onMessage`.
+
 Errors carry `err.body.code`: `E_APP_INVALID` (400), `E_APP_FORBIDDEN` (403), `E_APP_UNKNOWN` (409, the receiver has
 no such app), `E_APP_TOO_LARGE` (413), `E_APP_UNREACHABLE` (502).
 
