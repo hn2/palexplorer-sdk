@@ -53,6 +53,7 @@ export declare class PalexplorerClient {
   billing: BillingAPI;
   shareLinks: ShareLinksAPI;
   networks: NetworksAPI;
+  ai: AiAPI;
   sync: SyncAPI;
   capabilities: CapabilitiesAPI;
   constructor(options?: ClientOptions);
