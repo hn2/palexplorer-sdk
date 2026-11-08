@@ -18,3 +18,4 @@ export { BillingAPI } from './billing.js';
 export { ShareLinksAPI } from './shareLinks.js';
 export { NetworksAPI } from './networks.js';
 export { AiAPI } from './ai.js';
+export { SyncAPI, CapabilitiesAPI } from './sync.js';
