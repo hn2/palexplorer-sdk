@@ -1,3 +1,5 @@
+import { unsupported } from './unsupported.js';
+
 export class TransfersAPI {
   constructor(client) { this.client = client; }
 
@@ -13,7 +15,7 @@ export class TransfersAPI {
   }
 
   async stats() {
-    return this.client.fetchLocal('/api/transfers/stats');
+    return this.client.fetchLocal('/api/stats');
   }
 
   async pause(magnet) {
@@ -35,13 +37,10 @@ export class TransfersAPI {
   }
 
   async files(magnet) {
-    return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/files`);
+    unsupported('transfers.files');
   }
 
   async downloadSelected(magnet, { fileIndices, destDir }) {
-    return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/download-selected`, {
-      method: 'POST',
-      body: JSON.stringify({ fileIndices, destDir }),
-    });
+    unsupported('transfers.downloadSelected');
   }
 }

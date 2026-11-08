@@ -1,3 +1,5 @@
+import { unsupported } from './unsupported.js';
+
 export class AuthAPI {
   constructor(client) { this.client = client; }
 
@@ -6,7 +8,7 @@ export class AuthAPI {
   }
 
   async me() {
-    return this.client.fetchLocal('/api/auth/me');
+    unsupported('auth.me');
   }
 
   async login({ username, password, totpCode } = {}) {
@@ -29,31 +31,23 @@ export class AuthAPI {
   }
 
   async setupTotp() {
-    return this.client.fetchLocal('/api/auth/totp/setup', {
-      method: 'POST',
-    });
+    unsupported('auth.setupTotp');
   }
 
   async verifyTotp(code) {
-    return this.client.fetchLocal('/api/auth/totp/verify', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
+    unsupported('auth.verifyTotp');
   }
 
   async disableTotp(password) {
-    return this.client.fetchLocal('/api/auth/totp/disable', {
-      method: 'POST',
-      body: JSON.stringify({ password }),
-    });
+    unsupported('auth.disableTotp');
   }
 
   // QR login flow (desktop → web)
   async initQr() {
-    return this.client.fetchLocal('/api/auth/qr/init', { method: 'POST' });
+    unsupported('auth.initQr');
   }
 
   async pollQr(sessionId) {
-    return this.client.fetchLocal(`/api/auth/qr/status/${encodeURIComponent(sessionId)}`);
+    unsupported('auth.pollQr');
   }
 }

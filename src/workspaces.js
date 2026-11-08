@@ -1,39 +1,29 @@
+import { unsupported } from './unsupported.js';
+
 export class WorkspacesAPI {
   constructor(client) { this.client = client; }
 
   async list() {
-    return this.client.fetchLocal('/api/workspaces');
+    unsupported('workspaces.list');
   }
 
   async create(name) {
-    return this.client.fetchLocal('/api/workspaces', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
+    unsupported('workspaces.create');
   }
 
   async delete(id) {
-    return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
+    unsupported('workspaces.delete');
   }
 
   async activate(id) {
-    return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}/activate`, {
-      method: 'POST',
-    });
+    unsupported('workspaces.activate');
   }
 
   async addShare(id, shareId) {
-    return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}/shares`, {
-      method: 'POST',
-      body: JSON.stringify({ shareId }),
-    });
+    unsupported('workspaces.addShare');
   }
 
   async removeShare(id, shareId) {
-    return this.client.fetchLocal(`/api/workspaces/${encodeURIComponent(id)}/shares/${encodeURIComponent(shareId)}`, {
-      method: 'DELETE',
-    });
+    unsupported('workspaces.removeShare');
   }
 }

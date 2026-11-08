@@ -109,6 +109,10 @@ pal.shareLinks  // ShareLinksAPI — create and redeem public share links
 pal.networks    // NetworksAPI   — private networks, invite codes, member management
 ```
 
+### Methods the local daemon cannot serve yet
+
+These methods reject with `PalexplorerError` (status 501) without sending a request, because `pal serve --web` exposes no matching route: `auth.me`, `auth.setupTotp`, `auth.verifyTotp`, `auth.disableTotp`, `auth.initQr`, `auth.pollQr`, `billing.createCheckout`, `billing.createPortalSession`, `billing.activateLicense`, `billing.deactivateLicense`, all of `broadcast`, all of `settings`, all of `audit`, all of `workspaces`, `groups.broadcast`, `transfers.files`, `transfers.downloadSelected`.
+
 Internal methods (used by sub-APIs):
 - `fetchLocal(path, options)` -- fetch from local daemon with Bearer auth
 - `fetchDiscovery(path, options)` -- fetch from discovery server with API key
