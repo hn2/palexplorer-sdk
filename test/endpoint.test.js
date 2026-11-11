@@ -60,6 +60,17 @@ test('routes outside /api/v1 keep using loopback HTTP until the core serves them
   assert.equal(urls[0], 'http://localhost:8585/api/shares');
 });
 
+test('when the core reports fullApi, every route uses the IPC endpoint', async () => {
+  const { socketPath, seen } = await ipcServer(() => ({ shares: [] }));
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error('loopback HTTP must not be used'); };
+  cleanup.push(() => { globalThis.fetch = original; });
+  const pal = new PalexplorerClient({ localToken: 'tok', localEndpointFile: endpointFile({ schema: 'pal.capabilities/v1', socket: socketPath, fullApi: true }) });
+  const res = await pal.fetchLocal('/api/shares');
+  assert.deepEqual(res, { shares: [] });
+  assert.equal(seen[0].url, '/api/shares');
+});
+
 test('an explicit localServer opts out of endpoint auto-detection', async () => {
   const { socketPath, seen } = await ipcServer(() => ({}));
   const original = globalThis.fetch;

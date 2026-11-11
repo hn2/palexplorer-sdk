@@ -52,10 +52,13 @@ export class PalexplorerClient {
     // go over it instead of loopback TCP: same API, far lower per-request cost.
     this.localSocket = typeof options.localSocket === 'string' && options.localSocket ? options.localSocket : null;
     // Without an explicit localSocket or localServer, /api/v1/* calls use the core's published IPC endpoint when it
-    // exists (no TCP port, current user only). Other routes stay on loopback HTTP until the core serves them over IPC.
+    // exists (no TCP port, current user only). Other routes stay on loopback HTTP unless the core reports it serves the full API over IPC (fullApi).
     this._autoSocket = null;
+    this._autoFullApi = false;
     if (!this.localSocket && !options.localServer && options.localEndpoint !== false) {
-      this._autoSocket = readLocalEndpoint(options.localEndpointFile);
+      const endpoint = readLocalEndpoint(options.localEndpointFile);
+      this._autoSocket = endpoint ? endpoint.socket : null;
+      this._autoFullApi = endpoint ? endpoint.fullApi : false;
     }
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout
@@ -88,7 +91,7 @@ export class PalexplorerClient {
     const { timeoutMs, signal, ...fetchOptions } = options;
     const headers = { 'Content-Type': 'application/json', ...fetchOptions.headers };
     if (this.localToken) headers['Authorization'] = `Bearer ${this.localToken}`;
-    const socketPath = this.localSocket || (this._autoSocket && path.startsWith('/api/v1/') ? this._autoSocket : null);
+    const socketPath = this.localSocket || (this._autoSocket && (this._autoFullApi || path.startsWith('/api/v1/')) ? this._autoSocket : null);
     if (socketPath) {
       const res = await requestOverSocket(this, socketPath, path, { ...fetchOptions, headers, timeoutMs: timeoutMs || this.timeout, signal });
       if (res.status < 200 || res.status >= 300) throw new PalexplorerError(res.body.error || `HTTP ${res.status}`, res.status, res.body);

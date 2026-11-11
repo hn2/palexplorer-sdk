@@ -1,5 +1,5 @@
 // Local IPC endpoint of the core (hn2/palexplorer#930): a named pipe on Windows, a unix socket elsewhere, published in
-// ~/.palexplorer/capability-endpoint.json, which only the current user can read. Node.js only; returns null elsewhere.
+// ~/.palexplorer/capability-endpoint.json, which only the current user can read. Node.js only; returns null elsewhere. `fullApi` means the core serves every route over it.
 const SCHEMA = 'pal.capabilities/v1';
 
 export function readLocalEndpoint(file) {
@@ -11,7 +11,7 @@ export function readLocalEndpoint(file) {
     const endpointFile = file || path.join(os.homedir(), '.palexplorer', 'capability-endpoint.json');
     const data = JSON.parse(fs.readFileSync(endpointFile, 'utf8'));
     if (data?.schema !== SCHEMA || typeof data.socket !== 'string' || !data.socket) return null;
-    return data.socket;
+    return { socket: data.socket, fullApi: data.fullApi === true };
   } catch {
     return null;
   }

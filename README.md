@@ -551,8 +551,8 @@ const health = await discovery.status();
 
 Calls to `/api/v1/*` (capabilities, sync) go over the core's IPC endpoint by default on Node.js: a named pipe on Windows
 or a unix socket readable only by your user, published in `~/.palexplorer/capability-endpoint.json`. No TCP port is
-involved, so other local processes and web pages cannot reach it. Other routes still use loopback HTTP
-(`http://localhost:8585`) until the core serves them over IPC. Passing `localServer` opts out of auto-detection and
+involved, so other local processes and web pages cannot reach it. When the core reports it serves the full API over IPC (`fullApi`), every route uses it and no TCP port is needed. With an
+older core, other routes still use loopback HTTP (`http://localhost:8585`). Passing `localServer` opts out of auto-detection and
 `localEndpoint: false` disables it. Peer-to-peer traffic between pals is PAL/3 over UDP in the core and never goes
 through the SDK.
 
