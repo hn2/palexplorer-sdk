@@ -19,7 +19,7 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test --import ./test/support/no-endpoint.js test/*.test.js"
   },
   "dependencies": {},
   "engines": {
