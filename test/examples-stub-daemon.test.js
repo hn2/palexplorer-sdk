@@ -1,3 +1,6 @@
+import { startIpcStub } from './support/ipc-stub.js';
+import fs from 'node:fs';
+import os from 'node:os';
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -29,7 +32,7 @@ function startStub(handler) {
 
 function runExample(file, env, { until, timeoutMs = 8000 } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ['--import', preload, path.join(root, 'examples', file)], { cwd: root, env: { ...process.env, ...env } });
+    const child = spawn(process.execPath, ['--import', preload, path.join(root, 'examples', file)], { cwd: root, env: { ...process.env, HOME: testHome, USERPROFILE: testHome, ...env } });
     let out = '';
     let err = '';
     const timer = setTimeout(() => { child.kill(); reject(new Error(`${file} timed out\nstdout: ${out}\nstderr: ${err}`)); }, timeoutMs);
@@ -40,13 +43,15 @@ function runExample(file, env, { until, timeoutMs = 8000 } = {}) {
   });
 }
 
+let testHome;
+
 describe('examples run against a stub daemon and discovery server (#18)', () => {
   let local;
   let discovery;
   const state = { shares: [{ id: 's0', name: 'old', visibility: 'private', recipients: [] }] };
 
   before(async () => {
-    local = await startStub((req, res) => {
+    local = await startIpcStub((req, res) => {
       if (req.auth !== 'Bearer your_local_bearer_token') return json(res, 401, { error: 'unauthorized' });
       if (req.method === 'GET' && req.url === '/api/identity') return json(res, 200, { handle: '@me', publicKey: 'ab'.repeat(32) });
       if (req.method === 'GET' && req.url === '/api/shares') return json(res, 200, state.shares);
@@ -60,6 +65,10 @@ describe('examples run against a stub daemon and discovery server (#18)', () => 
       if (req.method === 'GET' && req.url === '/api/transfers') return json(res, 200, [{ name: 'movie.mkv', status: 'downloading', progress: 0.5 }]);
       return json(res, 404, { error: 'no route' });
     });
+    testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'pal-sdk-example-home-'));
+    const endpointDir = path.join(testHome, '.palexplorer');
+    fs.mkdirSync(endpointDir, { recursive: true });
+    fs.writeFileSync(path.join(endpointDir, 'capability-endpoint.json'), JSON.stringify({ schema: 'pal.local-ipc/v1', socket: local.socketPath, fullApi: true }));
     let inbox = [{ fromHandle: 'alice', payload: { type: 'chat', text: 'hello bot' } }];
     discovery = await startStub((req, res) => {
       if (req.method === 'GET' && req.url.startsWith('/api/v1/presence/')) return json(res, 200, { handle: '@alice', online: true, devices: [{ deviceName: 'phone', status: 'online', lastSeen: 'now' }] });
@@ -70,7 +79,7 @@ describe('examples run against a stub daemon and discovery server (#18)', () => 
     });
   });
 
-  after(() => { local.server.close(); discovery.server.close(); });
+  after(async () => { await local.close(); discovery.server.close(); fs.rmSync(testHome, { recursive: true, force: true }); });
 
   const env = () => ({ STUB_LOCAL: local.url, STUB_DISCOVERY: discovery.url });
 

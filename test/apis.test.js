@@ -1,3 +1,4 @@
+import './support/mock-local-api.js';
 import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { PalexplorerClient } from '../src/client.js';

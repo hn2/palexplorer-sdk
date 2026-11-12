@@ -17,7 +17,6 @@ import { PalexplorerClient } from '@palexplorer/sdk';
 
 const pal = new PalexplorerClient({
   apiKey: 'pk_pro_your_key_here',
-  localServer: 'http://localhost:8585',
   localToken: 'your_bearer_token',
 });
 
@@ -47,11 +46,10 @@ const pal = new PalexplorerClient({
 
 ### Bearer Token (Local Daemon)
 
-Required for local operations (shares, transfers, groups, comments, audit). Get the token by running `pal serve --web` or from your Palexplorer config.
+Required for local operations (shares, transfers, groups, comments, audit). Get the token by running `pal serve` or from your Palexplorer config.
 
 ```javascript
 const pal = new PalexplorerClient({
-  localServer: 'http://localhost:8585',
   localToken: 'your_bearer_token',
 });
 ```
@@ -63,7 +61,6 @@ For full access to all features:
 ```javascript
 const pal = new PalexplorerClient({
   apiKey: 'pk_pro_abc123...',
-  localServer: 'http://localhost:8585',
   localToken: 'your_bearer_token',
 });
 ```
@@ -74,7 +71,6 @@ const pal = new PalexplorerClient({
 const pal = new PalexplorerClient({
   apiKey: 'pk_pro_...',                                // API key for discovery server
   discoveryServer: 'https://discovery.palexplorer.com', // Discovery server URL (default)
-  localServer: 'http://localhost:8585',                 // Local daemon URL (default)
   localToken: 'bearer_token',                           // Local daemon auth token
   timeout: 10000,                                       // Request timeout in ms (default: 10000)
 });
@@ -111,7 +107,7 @@ pal.networks    // NetworksAPI   — private networks, invite codes, member mana
 
 ### Methods the local daemon cannot serve yet
 
-These methods reject with `PalexplorerError` (status 501) without sending a request when the client talks to the stock daemon (`pal serve --web`), because it exposes no matching route. A client created with its own `localServer` sends them (set `localRoutes: 'stock'` to keep the 501, or `localRoutes: 'extended'` to force the request): `auth.me`, `auth.setupTotp`, `auth.verifyTotp`, `auth.disableTotp`, `auth.initQr`, `auth.pollQr`, `billing.createCheckout`, `billing.createPortalSession`, `billing.activateLicense`, `billing.deactivateLicense`, all of `broadcast`, all of `settings`, all of `audit`, all of `workspaces`, `groups.broadcast`, `transfers.files`, `transfers.downloadSelected`.
+These methods reject with `PalexplorerError` (status 501) without sending a request when the client talks to the stock daemon (`pal serve`), because it exposes no matching route. An IPC client configured with `localRoutes: 'extended'` sends them (set `localRoutes: 'stock'` to keep the 501, or `localRoutes: 'extended'` to force the request): `auth.me`, `auth.setupTotp`, `auth.verifyTotp`, `auth.disableTotp`, `auth.initQr`, `auth.pollQr`, `billing.createCheckout`, `billing.createPortalSession`, `billing.activateLicense`, `billing.deactivateLicense`, all of `broadcast`, all of `settings`, all of `audit`, all of `workspaces`, `groups.broadcast`, `transfers.files`, `transfers.downloadSelected`.
 
 Internal methods (used by sub-APIs):
 - `fetchLocal(path, options)` -- fetch from local daemon with Bearer auth
@@ -549,12 +545,9 @@ const health = await discovery.status();
 
 ### Local transport
 
-Calls to `/api/v1/*` (capabilities, sync) go over the core's IPC endpoint by default on Node.js: a named pipe on Windows
-or a unix socket readable only by your user, published in `~/.palexplorer/capability-endpoint.json`. No TCP port is
-involved, so other local processes and web pages cannot reach it. When the core reports it serves the full API over IPC (`fullApi`), every route uses it and no TCP port is needed. With an
-older core, other routes still use loopback HTTP (`http://localhost:8585`). Passing `localServer` opts out of auto-detection and
-`localEndpoint: false` disables it. Peer-to-peer traffic between pals is PAL/3 over UDP in the core and never goes
-through the SDK.
+Every local call uses authenticated, framed IPC on a local Windows named pipe or an owner-controlled Unix socket. Start `pal serve`; no localhost HTTP server or WebSocket is opened. Endpoint metadata uses schema `pal.local-ipc/v1`. Missing, stale, legacy or untrusted endpoints fail closed. `localServer` is rejected; `localEndpoint: false` requires an explicit `localSocket`. Remote Windows UNC pipes are rejected before sending credentials.
+
+Each IPC connection authenticates with a bounded JSON frame before sending one request. Frames have a four-byte big-endian length prefix; responses stream headers, bounded base64 data chunks and an end marker. The SDK retains its JSON API and supports deadlines and cancellation. Peer traffic uses PAL/3 in the core.
 
 ### Sync / deliver (`pal.sync`, `pal.capabilities/v1`)
 
@@ -618,7 +611,7 @@ See the [examples/](./examples/) directory:
 ## Requirements
 
 - Node.js 20.16+
-- Palexplorer desktop app running with `pal serve --web` (for local operations)
+- Palexplorer desktop app running with `pal serve` (for local operations)
 - Pro subscription (for API key and discovery server access)
 - Optional: `sodium-native` for crypto operations
 

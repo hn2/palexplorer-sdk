@@ -2,7 +2,6 @@ import { PalexplorerClient } from '@palexplorer/sdk';
 
 const pal = new PalexplorerClient({
   apiKey: 'pk_pro_your_key_here',
-  localServer: 'http://localhost:8585',
   localToken: 'your_local_bearer_token',
 });
 

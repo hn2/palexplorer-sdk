@@ -1,5 +1,4 @@
 const map = [
-  ['http://localhost:8585', process.env.STUB_LOCAL],
   ['https://discovery.palexplorer.com', process.env.STUB_DISCOVERY],
 ];
 const realFetch = globalThis.fetch;
