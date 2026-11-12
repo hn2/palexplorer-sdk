@@ -42,8 +42,6 @@ info:
 servers:
   - url: https://discovery.palexplorer.com
     description: Discovery Server (production)
-  - url: http://localhost:8585
-    description: Local Daemon
 
 tags:
   - name: Identity

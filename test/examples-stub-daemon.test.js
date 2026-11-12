@@ -32,7 +32,7 @@ function startStub(handler) {
 
 function runExample(file, env, { until, timeoutMs = 8000 } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ['--import', preload, path.join(root, 'examples', file)], { cwd: root, env: { ...process.env, ...env } });
+    const child = spawn(process.execPath, ['--import', preload, path.join(root, 'examples', file)], { cwd: root, env: { ...process.env, HOME: testHome, USERPROFILE: testHome, ...env } });
     let out = '';
     let err = '';
     const timer = setTimeout(() => { child.kill(); reject(new Error(`${file} timed out\nstdout: ${out}\nstderr: ${err}`)); }, timeoutMs);
@@ -42,6 +42,8 @@ function runExample(file, env, { until, timeoutMs = 8000 } = {}) {
     child.on('close', (code) => finish(code));
   });
 }
+
+let testHome;
 
 describe('examples run against a stub daemon and discovery server (#18)', () => {
   let local;
@@ -63,7 +65,8 @@ describe('examples run against a stub daemon and discovery server (#18)', () => 
       if (req.method === 'GET' && req.url === '/api/transfers') return json(res, 200, [{ name: 'movie.mkv', status: 'downloading', progress: 0.5 }]);
       return json(res, 404, { error: 'no route' });
     });
-    const endpointDir = path.join(os.homedir(), '.palexplorer');
+    testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'pal-sdk-example-home-'));
+    const endpointDir = path.join(testHome, '.palexplorer');
     fs.mkdirSync(endpointDir, { recursive: true });
     fs.writeFileSync(path.join(endpointDir, 'capability-endpoint.json'), JSON.stringify({ schema: 'pal.local-ipc/v1', socket: local.socketPath, fullApi: true }));
     let inbox = [{ fromHandle: 'alice', payload: { type: 'chat', text: 'hello bot' } }];
@@ -76,7 +79,7 @@ describe('examples run against a stub daemon and discovery server (#18)', () => 
     });
   });
 
-  after(async () => { await local.close(); discovery.server.close(); });
+  after(async () => { await local.close(); discovery.server.close(); fs.rmSync(testHome, { recursive: true, force: true }); });
 
   const env = () => ({ STUB_LOCAL: local.url, STUB_DISCOVERY: discovery.url });
 

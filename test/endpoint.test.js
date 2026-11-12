@@ -91,3 +91,17 @@ test('Unix endpoints require an owner-controlled directory and safe metadata', {
   await assert.rejects(new PalexplorerClient({ localSocket: server.socketPath, localToken: 's' }).fetchLocal('/api/shares'), /directory must belong/);
   fs.chmodSync(server.dir, 0o700);
 });
+
+test('a large response whose frames arrive coalesced is accepted', async () => {
+  const frame = value => { const b = Buffer.from(JSON.stringify(value)); const h = Buffer.alloc(4); h.writeUInt32BE(b.length); return Buffer.concat([h, b]); };
+  const server = await stub((_req, res) => {
+    const text = JSON.stringify({ blob: 'x'.repeat(40 * 1024 * 8) });
+    const bytes = Buffer.from(text);
+    const parts = [frame({ kind: 'headers', status: 200 })];
+    for (let i = 0; i < bytes.length; i += 40 * 1024) parts.push(frame({ kind: 'data', body: bytes.subarray(i, i + 40 * 1024).toString('base64') }));
+    parts.push(frame({ kind: 'end' }));
+    res.raw(Buffer.concat(parts));
+  });
+  const pal = new PalexplorerClient({ localSocket: server.socketPath, localToken: 's', timeout: 2000 });
+  assert.equal((await pal.fetchLocal('/api/big')).blob.length, 40 * 1024 * 8);
+});
