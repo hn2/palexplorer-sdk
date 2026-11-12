@@ -2,17 +2,18 @@
 // @palexplorer/sdk@0.1.0-beta.2
 
 export interface ClientOptions {
-  /** Core IPC endpoint (named pipe / unix socket path; Node.js only). Preferred over localServer when set. */
+  /** Core IPC endpoint (named pipe / unix socket path; Node.js only). HTTP fallback is prohibited. */
   localSocket?: string;
+  localEndpointFile?: string;
+  localEndpoint?: boolean;
   apiKey?: string;
   discoveryServer?: string;
-  localServer?: string;
   localToken?: string;
   timeout?: number;
   /**
-   * Which routes the local daemon serves. 'stock' (default, and the default when `localServer` is not set) is the
+   * Which routes the local daemon serves. 'stock' (default) is the
    * daemon shipped with Palexplorer, which has no route for some methods; those reject with a 501 PalexplorerError.
-   * 'extended' (default when `localServer` is set) sends every request to your own daemon.
+   * 'extended' sends every request to your own daemon.
    */
   localRoutes?: 'stock' | 'extended';
 }
@@ -32,7 +33,6 @@ export declare class PalexplorerError extends Error {
 export declare class PalexplorerClient {
   apiKey: string | null;
   discoveryServer: string;
-  localServer: string;
   localToken: string | null;
   localRoutes: 'stock' | 'extended';
   timeout: number;

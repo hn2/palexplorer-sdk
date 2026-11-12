@@ -1,6 +1,6 @@
 # Palexplorer REST API
 
-**Base URL:** `http://localhost:8585/api` (local server, started by `pal serve --web`)
+**Transport:** authenticated framed local IPC (`pal.local-ipc/v1`), started by `pal serve`. The paths below are API resource names, not HTTP endpoints. Legacy localhost HTTP access is disabled.
 
 **Version:** v1 (current)
 
@@ -209,7 +209,7 @@ Get shares belonging to a specific pal.
 
 ## Transfers
 
-_Requires auth + CSRF. Download/cancel operations proxy to the desktop app on localhost:9090._
+_Legacy browser HTTP proxy access has been retired; use the native client._
 
 ### `GET /transfers`
 List active and recent transfers.

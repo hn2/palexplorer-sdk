@@ -1,103 +1,93 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import http from 'node:http';
-import os from 'node:os';
 import path from 'node:path';
-import { PalexplorerClient } from '../src/index.js';
+import { PalexplorerClient } from '../src/client.js';
+import { isLocalPipe } from '../src/localIpc.js';
+import { startIpcStub } from './support/ipc-stub.js';
 
 const cleanup = [];
 afterEach(async () => { while (cleanup.length) await cleanup.pop()(); });
-
-function tmp() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pal-sdk-endpoint-'));
-  cleanup.push(() => fs.rmSync(dir, { recursive: true, force: true }));
-  return dir;
+async function stub(handler = (_req, res) => res.end('{"ok":true}')) {
+  const value = await startIpcStub(handler); cleanup.push(value.close); return value;
 }
 
-async function ipcServer(handler) {
-  const name = `pal-sdk-test-${process.pid}-${Date.now()}`;
-  const bs = String.fromCharCode(92);
-  const socketPath = process.platform === 'win32' ? `${bs}${bs}.${bs}pipe${bs}${name}` : path.join(tmp(), `${name}.sock`);
-  const seen = [];
-  const server = http.createServer((req, res) => {
-    seen.push({ url: req.url, auth: req.headers.authorization });
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify(handler(req)));
-  });
-  await new Promise((resolve) => server.listen(socketPath, resolve));
-  cleanup.push(() => new Promise((resolve) => server.close(resolve)));
-  return { socketPath, seen };
-}
-
-function endpointFile(content) {
-  const file = path.join(tmp(), 'capability-endpoint.json');
-  fs.writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content));
-  return file;
-}
-
-test('without options, /api/v1 calls use the published IPC endpoint instead of TCP', async () => {
-  const { socketPath, seen } = await ipcServer(() => ({ capabilities: ['sync'] }));
-  const original = globalThis.fetch;
-  globalThis.fetch = async () => { throw new Error('loopback HTTP must not be used'); };
-  cleanup.push(() => { globalThis.fetch = original; });
-  const pal = new PalexplorerClient({ localToken: 'tok', localEndpointFile: endpointFile({ schema: 'pal.capabilities/v1', socket: socketPath }) });
-  const res = await pal.sync.capabilities();
-  assert.deepEqual(res, { capabilities: ['sync'] });
-  assert.equal(seen[0].url, '/api/v1/capabilities');
-  assert.equal(seen[0].auth, 'Bearer tok');
+test('all local routes use framed IPC and bearer authentication, never fetch', async () => {
+  const server = await stub();
+  const file = path.join(server.dir, 'endpoint.json');
+  fs.writeFileSync(file, JSON.stringify({ schema: 'pal.local-ipc/v1', socket: server.socketPath, fullApi: true }));
+  const original = globalThis.fetch; globalThis.fetch = () => { throw new Error('HTTP must not run'); }; cleanup.push(() => { globalThis.fetch = original; });
+  const pal = new PalexplorerClient({ localToken: 'secret', localEndpointFile: file });
+  assert.deepEqual(await pal.fetchLocal('/api/v1/capabilities'), { ok: true });
+  assert.deepEqual(await pal.fetchLocal('/api/shares', { method: 'POST', body: '{"name":"x"}' }), { ok: true });
+  assert.equal(server.requests[0].auth, 'Bearer secret');
+  assert.deepEqual(server.requests[1].body, { name: 'x' });
 });
 
-test('routes outside /api/v1 keep using loopback HTTP until the core serves them over IPC', async () => {
-  const { socketPath, seen } = await ipcServer(() => ({}));
-  const original = globalThis.fetch;
-  const urls = [];
-  globalThis.fetch = async (url) => { urls.push(String(url)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; };
-  cleanup.push(() => { globalThis.fetch = original; });
-  const pal = new PalexplorerClient({ localEndpointFile: endpointFile({ schema: 'pal.capabilities/v1', socket: socketPath }) });
-  await pal.fetchLocal('/api/shares');
-  assert.equal(seen.length, 0);
-  assert.equal(urls[0], 'http://localhost:8585/api/shares');
-});
-
-test('when the core reports fullApi, every route uses the IPC endpoint', async () => {
-  const { socketPath, seen } = await ipcServer(() => ({ shares: [] }));
-  const original = globalThis.fetch;
-  globalThis.fetch = async () => { throw new Error('loopback HTTP must not be used'); };
-  cleanup.push(() => { globalThis.fetch = original; });
-  const pal = new PalexplorerClient({ localToken: 'tok', localEndpointFile: endpointFile({ schema: 'pal.capabilities/v1', socket: socketPath, fullApi: true }) });
-  const res = await pal.fetchLocal('/api/shares');
-  assert.deepEqual(res, { shares: [] });
-  assert.equal(seen[0].url, '/api/shares');
-});
-
-test('an explicit localServer opts out of endpoint auto-detection', async () => {
-  const { socketPath, seen } = await ipcServer(() => ({}));
-  const original = globalThis.fetch;
-  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) });
-  cleanup.push(() => { globalThis.fetch = original; });
-  const pal = new PalexplorerClient({ localServer: 'http://127.0.0.1:9999', localEndpointFile: endpointFile({ schema: 'pal.capabilities/v1', socket: socketPath }) });
-  await pal.fetchLocal('/api/v1/capabilities');
-  assert.equal(seen.length, 0);
-});
-
-test('localEndpoint:false disables auto-detection', () => {
-  const pal = new PalexplorerClient({ localEndpoint: false, localEndpointFile: endpointFile({ schema: 'pal.capabilities/v1', socket: '/x' }) });
-  assert.equal(pal._autoSocket, null);
-});
-
-test('malformed, foreign-schema or missing endpoint files are ignored', () => {
-  for (const content of ['not json', { schema: 'other/v1', socket: '/x' }, { schema: 'pal.capabilities/v1' }, { schema: 'pal.capabilities/v1', socket: '' }]) {
-    const pal = new PalexplorerClient({ localEndpointFile: endpointFile(content) });
-    assert.equal(pal._autoSocket, null);
+test('missing, legacy and malformed endpoint metadata fail closed without HTTP', async () => {
+  const server = await stub();
+  const original = globalThis.fetch; let calls = 0; globalThis.fetch = async () => { calls++; }; cleanup.push(() => { globalThis.fetch = original; });
+  for (const content of [null, 'invalid JSON', { schema: 'pal.capabilities/v1', socket: server.socketPath }]) {
+    const file = path.join(server.dir, `metadata-${calls}.json`);
+    if (content !== null) fs.writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content));
+    await assert.rejects(new PalexplorerClient({ localToken: 's', localEndpointFile: file }).fetchLocal('/api/shares'), /HTTP fallback is disabled/);
+    fs.rmSync(file, { force: true });
   }
-  const missing = new PalexplorerClient({ localEndpointFile: path.join(tmp(), 'nope.json') });
-  assert.equal(missing._autoSocket, null);
+  assert.equal(calls, 0);
 });
 
-test('an endpoint file that other users can write is ignored (unix)', { skip: process.platform === 'win32' }, () => {
-  const file = endpointFile({ schema: 'pal.capabilities/v1', socket: '/x' });
+test('localServer cannot opt back into TCP, including HTTPS or aliases', () => {
+  for (const localServer of ['http://localhost:8585', 'http://127.1:8585', 'https://localhost', 'http://[::1]']) {
+    assert.throws(() => new PalexplorerClient({ localServer }), /localServer was removed/);
+  }
+});
+
+test('Windows remote UNC and device paths cannot receive the token', () => {
+  assert.equal(isLocalPipe(String.raw`\\.\pipe\palexplorer-cap-a`), true);
+  for (const value of [String.raw`\\remote\pipe\pal`, String.raw`\\?\UNC\host\pipe\pal`, String.raw`\\.\pipe\a\b`, 'localhost:8585']) assert.equal(isLocalPipe(value), false);
+});
+
+test('malformed JSON, oversized frames and truncated responses are rejected', async () => {
+  for (const kind of ['json', 'size', 'truncated']) {
+    const server = await stub((_req, res) => {
+      if (kind === 'json') { res.writeHead(200); res.end('<html>'); }
+      if (kind === 'size') { const header = Buffer.alloc(4); header.writeUInt32BE(1024 * 1024); res.raw(header); }
+      if (kind === 'truncated') res.destroy();
+    });
+    const pal = new PalexplorerClient({ localSocket: server.socketPath, localToken: 's', timeout: 200 });
+    await assert.rejects(pal.fetchLocal('/api/test'), /malformed|length|complete response/);
+  }
+});
+
+test('timeouts and AbortSignal close the IPC request', async () => {
+  const server = await stub(() => {});
+  const pal = new PalexplorerClient({ localSocket: server.socketPath, localToken: 's', timeout: 30 });
+  await assert.rejects(pal.fetchLocal('/api/wait'), /timed out/);
+  const controller = new AbortController();
+  const result = pal.fetchLocal('/api/wait', { signal: controller.signal, timeoutMs: 1000 });
+  controller.abort(new Error('cancelled'));
+  await assert.rejects(result, /cancelled/);
+});
+
+test('missing local token is rejected before dispatch', async () => {
+  const server = await stub();
+  await assert.rejects(new PalexplorerClient({ localSocket: server.socketPath }).fetchLocal('/api/test'), /token is required/);
+  assert.equal(server.requests.length, 0);
+});
+
+test('explicit Windows UNC endpoints fail before credentials leave the process', { skip: process.platform !== 'win32' }, async () => {
+  const pal = new PalexplorerClient({ localSocket: String.raw`\\remote\pipe\palexplorer`, localToken: 'must-stay-local' });
+  await assert.rejects(pal.fetchLocal('/api/shares'), /Only a local Windows named pipe/);
+});
+
+test('Unix endpoints require an owner-controlled directory and safe metadata', { skip: process.platform === 'win32' }, async () => {
+  const server = await stub();
+  const file = path.join(server.dir, 'endpoint.json');
+  fs.writeFileSync(file, JSON.stringify({ schema: 'pal.local-ipc/v1', socket: server.socketPath }));
   fs.chmodSync(file, 0o666);
-  const pal = new PalexplorerClient({ localEndpointFile: file });
-  assert.equal(pal._autoSocket, null);
+  await assert.rejects(new PalexplorerClient({ localToken: 's', localEndpointFile: file }).fetchLocal('/api/shares'), /No trusted local IPC/);
+  fs.chmodSync(file, 0o600);
+  fs.chmodSync(server.dir, 0o777);
+  await assert.rejects(new PalexplorerClient({ localSocket: server.socketPath, localToken: 's' }).fetchLocal('/api/shares'), /directory must belong/);
+  fs.chmodSync(server.dir, 0o700);
 });

@@ -1,3 +1,4 @@
+import './support/mock-local-api.js';
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { PalexplorerClient, SyncAPI, CapabilitiesAPI } from '../src/index.js';
@@ -90,35 +91,6 @@ test('stop() aborts an in-flight long-poll instead of waiting it out', async () 
   assert.ok(Date.now() - started < 1000);
 });
 
-test('localSocket sends local calls over IPC with the bearer token and maps errors', async () => {
-  const http = await import('node:http');
-  const os = await import('node:os');
-  const path = await import('node:path');
-  const sock = process.platform === 'win32' ? `\\\\.\\pipe\\pal-sdk-test-${process.pid}` : path.join(os.tmpdir(), `pal-sdk-${process.pid}.sock`);
-  const seen = [];
-  const server = http.createServer((req, res) => {
-    const chunks = [];
-    req.on('data', (c) => chunks.push(c));
-    req.on('end', () => {
-      seen.push({ url: req.url, auth: req.headers.authorization, body: Buffer.concat(chunks).toString() });
-      if (req.url.startsWith('/api/v1/tokens')) { res.statusCode = 403; return res.end(JSON.stringify({ error: 'Full token required', code: 'E_APP_FORBIDDEN' })); }
-      res.end(JSON.stringify({ ok: true, id: 'ipc1' }));
-    });
-  });
-  await new Promise((resolve) => server.listen(sock, resolve));
-  try {
-    const pal = new PalexplorerClient({ localSocket: sock, localToken: 'tok' });
-    const res = await pal.sync.deliver({ app: 'fl.sync', to: 'ab'.repeat(32), payload: 1 });
-    assert.equal(res.id, 'ipc1');
-    assert.equal(seen[0].url, '/api/v1/sync/deliver');
-    assert.equal(seen[0].auth, 'Bearer tok');
-    await assert.rejects(pal.capabilities.issueToken({ app: 'x' }), (err) => err.status === 403 && err.body.code === 'E_APP_FORBIDDEN');
-    pal._socketAgent.destroy();
-  } finally {
-    server.close();
-  }
-});
-
 test('a throwing onMessage does not drop the rest of the batch and is reported', async () => {
   original = globalThis.fetch;
   let polls = 0;
@@ -193,22 +165,3 @@ test('fetchLocal composes signals without AbortSignal.any (Node 18.0-18.16)', as
     AbortSignal.any = anyOriginal;
   }
 });
-
-test('a malformed or empty 2xx IPC reply is an error, not an empty success', async () => {
-  const http = await import('node:http');
-  const os = await import('node:os');
-  const path = await import('node:path');
-  const sock = process.platform === 'win32' ? String.raw`\\.\pipe\pal-sdk-bad-${process.pid}` : path.join(os.tmpdir(), `pal-sdk-bad-${process.pid}.sock`);
-  const server = http.createServer((req, res) => { res.statusCode = 200; res.end(req.url.includes('empty') ? '' : '<html>'); });
-  await new Promise((resolve) => server.listen(sock, resolve));
-  try {
-    const pal = new PalexplorerClient({ localSocket: sock, localToken: 't' });
-    await assert.rejects(() => pal.fetchLocal('/empty'), (err) => err.body.notJson === true);
-    await assert.rejects(() => pal.fetchLocal('/html'), (err) => err.body.notJson === true);
-  } finally {
-    await new Promise((resolve) => server.close(resolve));
-    pal_agent_cleanup();
-  }
-});
-
-function pal_agent_cleanup() {}

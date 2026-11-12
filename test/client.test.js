@@ -1,3 +1,4 @@
+import './support/mock-local-api.js';
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { PalexplorerClient, PalexplorerError } from '../src/client.js';
@@ -26,7 +27,7 @@ describe('PalexplorerClient', () => {
   test('constructor sets defaults', () => {
     const client = new PalexplorerClient();
     assert.equal(client.discoveryServer, 'https://discovery.palexplorer.com');
-    assert.equal(client.localServer, 'http://localhost:8585');
+    assert.equal(client.localServer, undefined);
     assert.equal(client.apiKey, null);
     assert.equal(client.timeout, 10000);
   });
@@ -35,13 +36,12 @@ describe('PalexplorerClient', () => {
     const client = new PalexplorerClient({
       apiKey: 'pk_test_123',
       discoveryServer: 'https://my-server.com/',
-      localServer: 'http://localhost:9999/',
       localToken: 'mytoken',
       timeout: 5000,
     });
     assert.equal(client.apiKey, 'pk_test_123');
     assert.equal(client.discoveryServer, 'https://my-server.com');
-    assert.equal(client.localServer, 'http://localhost:9999');
+    assert.equal(client.localServer, undefined);
     assert.equal(client.localToken, 'mytoken');
     assert.equal(client.timeout, 5000);
   });
@@ -49,10 +49,9 @@ describe('PalexplorerClient', () => {
   test('strips trailing slashes from servers', () => {
     const client = new PalexplorerClient({
       discoveryServer: 'https://d.com/',
-      localServer: 'http://localhost:9999/',
     });
     assert.equal(client.discoveryServer, 'https://d.com');
-    assert.equal(client.localServer, 'http://localhost:9999');
+    assert.equal(client.localServer, undefined);
   });
 
   test('has all sub-APIs', () => {

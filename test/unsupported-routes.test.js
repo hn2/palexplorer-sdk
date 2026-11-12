@@ -1,3 +1,4 @@
+import './support/mock-local-api.js';
 import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { PalexplorerClient, PalexplorerError } from '../src/client.js';
@@ -68,13 +69,13 @@ describe('a custom local daemon is honored (#17, Codex note on #19)', () => {
   const original = globalThis.fetch;
   afterEach(() => { globalThis.fetch = original; });
 
-  test('a client with its own localServer sends the request for methods the stock daemon lacks', async () => {
+  test('an extended IPC client dispatches the request for methods the stock daemon lacks', async () => {
     const seen = [];
     globalThis.fetch = async (url, init) => {
       seen.push([init.method || 'GET', url]);
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } });
     };
-    const c = new PalexplorerClient({ localServer: 'http://127.0.0.1:9000' });
+    const c = new PalexplorerClient({ localRoutes: 'extended' });
     assert.equal(c.localRoutes, 'extended');
     await c.settings.get();
     await c.settings.update({ theme: 'dark' });
@@ -85,10 +86,10 @@ describe('a custom local daemon is honored (#17, Codex note on #19)', () => {
     ]);
   });
 
-  test('localRoutes: stock keeps the 501 even with a custom server, and bad values are rejected', async () => {
+  test('localRoutes: stock keeps the 501 over IPC, and bad values are rejected', async () => {
     let called = false;
     globalThis.fetch = async () => { called = true; return new Response('{}'); };
-    const c = new PalexplorerClient({ localServer: 'http://127.0.0.1:9000', localRoutes: 'stock' });
+    const c = new PalexplorerClient({ localRoutes: 'stock' });
     await assert.rejects(() => c.settings.get(), (err) => err.status === 501);
     assert.equal(called, false);
     assert.throws(() => new PalexplorerClient({ localRoutes: 'nope' }), TypeError);
@@ -96,7 +97,7 @@ describe('a custom local daemon is honored (#17, Codex note on #19)', () => {
 
   test('an HTML fallback page is reported as a missing route, not as a JSON parse crash', async () => {
     globalThis.fetch = async () => new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html' } });
-    const c = new PalexplorerClient({ localServer: 'http://127.0.0.1:9000' });
+    const c = new PalexplorerClient({ localRoutes: 'extended' });
     await assert.rejects(() => c.settings.get(), (err) => err instanceof PalexplorerError && err.body.notJson === true);
   });
 });
