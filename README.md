@@ -617,7 +617,7 @@ See the [examples/](./examples/) directory:
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 20.16+
 - Palexplorer desktop app running with `pal serve --web` (for local operations)
 - Pro subscription (for API key and discovery server access)
 - Optional: `sodium-native` for crypto operations

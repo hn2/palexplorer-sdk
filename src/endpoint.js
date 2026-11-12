@@ -9,6 +9,8 @@ export function readLocalEndpoint(file) {
     const path = globalThis.process?.getBuiltinModule?.('node:path');
     if (!fs || !os || !path) return null;
     const endpointFile = file || path.join(os.homedir(), '.palexplorer', 'capability-endpoint.json');
+    const st = fs.statSync(endpointFile);
+    if (typeof globalThis.process.getuid === 'function' && (st.uid !== globalThis.process.getuid() || (st.mode & 0o022) !== 0)) return null;
     const data = JSON.parse(fs.readFileSync(endpointFile, 'utf8'));
     if (data?.schema !== SCHEMA || typeof data.socket !== 'string' || !data.socket) return null;
     return { socket: data.socket, fullApi: data.fullApi === true };

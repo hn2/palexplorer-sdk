@@ -94,3 +94,10 @@ test('malformed, foreign-schema or missing endpoint files are ignored', () => {
   const missing = new PalexplorerClient({ localEndpointFile: path.join(tmp(), 'nope.json') });
   assert.equal(missing._autoSocket, null);
 });
+
+test('an endpoint file that other users can write is ignored (unix)', { skip: process.platform === 'win32' }, () => {
+  const file = endpointFile({ schema: 'pal.capabilities/v1', socket: '/x' });
+  fs.chmodSync(file, 0o666);
+  const pal = new PalexplorerClient({ localEndpointFile: file });
+  assert.equal(pal._autoSocket, null);
+});

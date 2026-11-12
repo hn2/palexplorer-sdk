@@ -156,7 +156,7 @@ async function assertTrustedSocket(path) {
 
 async function requestOverSocket(client, socketPath, path, { method = 'GET', headers, body, timeoutMs, signal }) {
   const http = await import('node:http');
-  await assertTrustedSocket(client.localSocket);
+  await assertTrustedSocket(socketPath);
   client._socketAgent ||= new http.Agent({ keepAlive: true });
   return new Promise((resolve, reject) => {
     let settled = false;
