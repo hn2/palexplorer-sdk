@@ -4,6 +4,10 @@ All notable changes to `@palexplorer/sdk` will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+- `/api/v1/*` calls use the core's IPC endpoint by default (Node.js); `localServer` or `localEndpoint: false` opts out (hn2/palexplorer-sdk#25).
+
 ## [0.1.0-beta.3] — 2026-11-05 (not yet published)
 
 ### Added

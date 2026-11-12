@@ -547,6 +547,15 @@ const online = await discovery.presence('alice');
 const health = await discovery.status();
 ```
 
+### Local transport
+
+Calls to `/api/v1/*` (capabilities, sync) go over the core's IPC endpoint by default on Node.js: a named pipe on Windows
+or a unix socket readable only by your user, published in `~/.palexplorer/capability-endpoint.json`. No TCP port is
+involved, so other local processes and web pages cannot reach it. When the core reports it serves the full API over IPC (`fullApi`), every route uses it and no TCP port is needed. With an
+older core, other routes still use loopback HTTP (`http://localhost:8585`). Passing `localServer` opts out of auto-detection and
+`localEndpoint: false` disables it. Peer-to-peer traffic between pals is PAL/3 over UDP in the core and never goes
+through the SDK.
+
 ### Sync / deliver (`pal.sync`, `pal.capabilities/v1`)
 
 Send opaque JSON payloads to a pal or your own device through the local Palexplorer core. The core carries them over
@@ -608,7 +617,7 @@ See the [examples/](./examples/) directory:
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 20.16+
 - Palexplorer desktop app running with `pal serve --web` (for local operations)
 - Pro subscription (for API key and discovery server access)
 - Optional: `sodium-native` for crypto operations

@@ -17,6 +17,7 @@ import { ShareLinksAPI } from './shareLinks.js';
 import { NetworksAPI } from './networks.js';
 import { AiAPI } from './ai.js';
 import { SyncAPI, CapabilitiesAPI } from './sync.js';
+import { readLocalEndpoint } from './endpoint.js';
 
 import { PalexplorerError } from './errors.js';
 export { PalexplorerError };
@@ -50,6 +51,15 @@ export class PalexplorerClient {
     // Local IPC endpoint of the core (named pipe on Windows, unix socket elsewhere; Node.js only). When set, local calls
     // go over it instead of loopback TCP: same API, far lower per-request cost.
     this.localSocket = typeof options.localSocket === 'string' && options.localSocket ? options.localSocket : null;
+    // Without an explicit localSocket or localServer, /api/v1/* calls use the core's published IPC endpoint when it
+    // exists (no TCP port, current user only). Other routes stay on loopback HTTP unless the core reports it serves the full API over IPC (fullApi).
+    this._autoSocket = null;
+    this._autoFullApi = false;
+    if (!this.localSocket && !options.localServer && options.localEndpoint !== false) {
+      const endpoint = readLocalEndpoint(options.localEndpointFile);
+      this._autoSocket = endpoint ? endpoint.socket : null;
+      this._autoFullApi = endpoint ? endpoint.fullApi : false;
+    }
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout
       : 10000;
@@ -81,8 +91,9 @@ export class PalexplorerClient {
     const { timeoutMs, signal, ...fetchOptions } = options;
     const headers = { 'Content-Type': 'application/json', ...fetchOptions.headers };
     if (this.localToken) headers['Authorization'] = `Bearer ${this.localToken}`;
-    if (this.localSocket) {
-      const res = await requestOverSocket(this, path, { ...fetchOptions, headers, timeoutMs: timeoutMs || this.timeout, signal });
+    const socketPath = this.localSocket || (this._autoSocket && (this._autoFullApi || path.startsWith('/api/v1/')) ? this._autoSocket : null);
+    if (socketPath) {
+      const res = await requestOverSocket(this, socketPath, path, { ...fetchOptions, headers, timeoutMs: timeoutMs || this.timeout, signal });
       if (res.status < 200 || res.status >= 300) throw new PalexplorerError(res.body.error || `HTTP ${res.status}`, res.status, res.body);
       return res.body;
     }
@@ -143,14 +154,14 @@ async function assertTrustedSocket(path) {
   }
 }
 
-async function requestOverSocket(client, path, { method = 'GET', headers, body, timeoutMs, signal }) {
+async function requestOverSocket(client, socketPath, path, { method = 'GET', headers, body, timeoutMs, signal }) {
   const http = await import('node:http');
-  await assertTrustedSocket(client.localSocket);
+  await assertTrustedSocket(socketPath);
   client._socketAgent ||= new http.Agent({ keepAlive: true });
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (fn, value) => { if (settled) return; settled = true; clearTimeout(deadline); fn(value); };
-    const req = http.request({ socketPath: client.localSocket, path, method, headers, agent: client._socketAgent, signal }, (res) => {
+    const req = http.request({ socketPath, path, method, headers, agent: client._socketAgent, signal }, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => {
