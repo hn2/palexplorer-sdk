@@ -5,6 +5,7 @@ export interface ClientOptions {
   /** Core IPC endpoint (named pipe / unix socket path; Node.js only). HTTP fallback is prohibited. */
   localSocket?: string;
   localEndpointFile?: string;
+  localSecret?: string;
   localEndpoint?: boolean;
   apiKey?: string;
   discoveryServer?: string;
