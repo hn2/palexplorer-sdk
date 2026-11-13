@@ -45,6 +45,7 @@ export class PalexplorerClient {
     }
     this.localRoutes = options.localRoutes || 'stock';
     this.localSocket = typeof options.localSocket === 'string' && options.localSocket ? options.localSocket : null;
+    this.localSecret = typeof options.localSecret === 'string' && options.localSecret ? options.localSecret : undefined;
     this.localEndpointFile = options.localEndpointFile;
     this.localEndpoint = options.localEndpoint !== false;
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
@@ -74,10 +75,10 @@ export class PalexplorerClient {
   }
 
   async fetchLocal(path, options = {}) {
-    const endpoint = this.localSocket ? { socket: this.localSocket } : (this.localEndpoint ? readLocalEndpoint(this.localEndpointFile) : null);
+    const endpoint = this.localSocket ? { socket: this.localSocket, secret: this.localSecret } : (this.localEndpoint ? readLocalEndpoint(this.localEndpointFile) : null);
     if (!endpoint) throw new PalexplorerError('No trusted local IPC endpoint. Start the native core; HTTP fallback is disabled.', 503, {});
     const res = await requestLocalIpc(endpoint.socket, path, {
-      method: options.method || 'GET', body: options.body, token: this.localToken,
+      method: options.method || 'GET', body: options.body, token: this.localToken, headers: options.headers, secret: endpoint.secret,
       timeoutMs: options.timeoutMs || this.timeout, signal: options.signal,
     });
     if (res.status < 200 || res.status >= 300) throw new PalexplorerError(res.body.error || `IPC ${res.status}`, res.status, res.body);

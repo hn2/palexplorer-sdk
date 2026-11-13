@@ -14,7 +14,7 @@ export function readLocalEndpoint(file) {
     const data = JSON.parse(fs.readFileSync(endpointFile, 'utf8'));
     if (data?.schema !== LOCAL_IPC_SCHEMA || typeof data.socket !== 'string' || !data.socket) return null;
     if (globalThis.process.platform === 'win32' && !isLocalPipe(data.socket)) return null;
-    return { socket: data.socket, fullApi: data.fullApi === true };
+    return { socket: data.socket, fullApi: data.fullApi === true, ...(typeof data.secret === 'string' && /^[0-9a-f]{64}$/.test(data.secret) ? { secret: data.secret } : {}) };
   } catch {
     return null;
   }
