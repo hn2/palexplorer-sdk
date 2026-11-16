@@ -99,7 +99,7 @@ pal.broadcast   // BroadcastAPI  — group messaging, media broadcast
 pal.audit       // AuditAPI      — audit log access
 pal.settings    // SettingsAPI   — app settings, API key management
 pal.workspaces  // WorkspacesAPI — workspace management
-pal.pals        // PalsAPI       — manage pals (contacts) and their groups
+pal.pals        // PalsAPI       — manage pals and their groups
 pal.billing     // BillingAPI    — subscription status, checkout, license activation
 pal.shareLinks  // ShareLinksAPI — create and redeem public share links
 pal.networks    // NetworksAPI   — private networks, invite codes, member management
@@ -411,7 +411,7 @@ await pal.workspaces.delete(ws.workspace.id);
 
 ### PalsAPI (`pal.pals`)
 
-Manages pals (contacts) and their groups via the local daemon.
+Manages pals and their groups via the local daemon.
 
 | Method | Signature | Description |
 |:---|:---|:---|
