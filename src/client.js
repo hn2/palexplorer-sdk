@@ -19,6 +19,7 @@ import { AiAPI } from './ai.js';
 import { SyncAPI, CapabilitiesAPI } from './sync.js';
 import { readLocalEndpoint } from './endpoint.js';
 import { requestLocalIpc } from './localIpc.js';
+import { sanitizeTransportResponse } from './identifiers.js';
 
 import { PalexplorerError } from './errors.js';
 export { PalexplorerError };
@@ -48,6 +49,7 @@ export class PalexplorerClient {
     this.localSecret = typeof options.localSecret === 'string' && options.localSecret ? options.localSecret : undefined;
     this.localEndpointFile = options.localEndpointFile;
     this.localEndpoint = options.localEndpoint !== false;
+    this.allowEnterpriseSha384 = Boolean(options.allowEnterpriseSha384);
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout
       : 10000;
@@ -82,7 +84,7 @@ export class PalexplorerClient {
       timeoutMs: options.timeoutMs || this.timeout, signal: options.signal,
     });
     if (res.status < 200 || res.status >= 300) throw new PalexplorerError(res.body.error || `IPC ${res.status}`, res.status, res.body);
-    return res.body;
+    return sanitizeTransportResponse(res.body);
   }
 
   async fetchDiscovery(path, options = {}) {
@@ -98,6 +100,6 @@ export class PalexplorerClient {
       const body = await res.json().catch(() => ({}));
       throw new PalexplorerError(body.error || `HTTP ${res.status}`, res.status, body);
     }
-    return res.json();
+    return sanitizeTransportResponse(await res.json());
   }
 }

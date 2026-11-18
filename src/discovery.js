@@ -1,3 +1,5 @@
+import { sanitizeTransportResponse } from './identifiers.js';
+
 export class DiscoveryClient {
   constructor(options = {}) {
     this.server = (options.server || 'https://discovery.palexplorer.com').replace(/\/$/, '');
@@ -18,7 +20,7 @@ export class DiscoveryClient {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || `HTTP ${res.status}`);
     }
-    return res.json();
+    return sanitizeTransportResponse(await res.json());
   }
 
   async resolve(handle) {

@@ -1,6 +1,7 @@
 // pal.capabilities/v1 sync/deliver (hn2/palexplorer#930): send opaque JSON payloads to a pal or own device through the
 // local Palexplorer core over PAL/3. The core owns every key; the app holds only a (preferably app-scoped) token.
 import { randomUUID } from 'node:crypto';
+import { assertCanonicalId } from './identifiers.js';
 
 const MAX_WAIT_MS = 25000;
 const randomKey = () => randomUUID();
@@ -19,6 +20,7 @@ export class SyncAPI {
   // `idempotencyKey` defaults to a fresh random id; pass the same key when retrying a delivery whose answer was lost so
   // the core can recognise it as the same request.
   async deliver({ app, to, payload, idempotencyKey = randomKey() }) {
+    assertCanonicalId(to, 'to', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal('/api/v1/sync/deliver', {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },

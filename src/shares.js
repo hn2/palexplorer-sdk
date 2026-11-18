@@ -1,3 +1,5 @@
+import { assertCanonicalId } from './identifiers.js';
+
 export class SharesAPI {
   constructor(client) { this.client = client; }
 
@@ -13,12 +15,14 @@ export class SharesAPI {
   }
 
   async remove(shareId) {
+    assertCanonicalId(shareId, 'shareId', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal(`/api/shares/${encodeURIComponent(shareId)}`, {
       method: 'DELETE',
     });
   }
 
   async get(shareId) {
+    assertCanonicalId(shareId, 'shareId', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal(`/api/shares/${encodeURIComponent(shareId)}`);
   }
 }

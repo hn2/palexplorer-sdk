@@ -102,17 +102,18 @@ describe('PalexplorerClient', () => {
 
 describe('SharesAPI', () => {
   let mock;
+  const shareId = 'ab'.repeat(32);
   afterEach(() => { if (mock) mock.restore(); });
 
   test('list calls /api/shares', async () => {
-    mock = mockFetch({ '/api/shares': { shares: [{ id: 's1' }] } });
+    mock = mockFetch({ '/api/shares': { shares: [{ id: shareId }] } });
     const client = new PalexplorerClient();
     const result = await client.shares.list();
-    assert.deepEqual(result, { shares: [{ id: 's1' }] });
+    assert.deepEqual(result, { shares: [{ id: shareId }] });
   });
 
   test('create sends POST with body', async () => {
-    mock = mockFetch({ '/api/shares': { id: 'new-share' } });
+    mock = mockFetch({ '/api/shares': { id: shareId } });
     const client = new PalexplorerClient();
     await client.shares.create({ path: '/tmp/test', visibility: 'private' });
     assert.equal(mock.calls[0].opts.method, 'POST');
@@ -122,17 +123,17 @@ describe('SharesAPI', () => {
   });
 
   test('remove sends DELETE', async () => {
-    mock = mockFetch({ '/api/shares/s1': { ok: true } });
+    mock = mockFetch({ [`/api/shares/${shareId}`]: { ok: true } });
     const client = new PalexplorerClient();
-    await client.shares.remove('s1');
+    await client.shares.remove(shareId);
     assert.equal(mock.calls[0].opts.method, 'DELETE');
   });
 
   test('get fetches single share', async () => {
-    mock = mockFetch({ '/api/shares/s1': { id: 's1', path: '/data' } });
+    mock = mockFetch({ [`/api/shares/${shareId}`]: { id: shareId, path: '/data' } });
     const client = new PalexplorerClient();
-    const result = await client.shares.get('s1');
-    assert.equal(result.id, 's1');
+    const result = await client.shares.get(shareId);
+    assert.equal(result.id, shareId);
   });
 });
 
