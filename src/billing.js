@@ -1,4 +1,5 @@
 import { routeOr } from './unsupported.js';
+import { assertCanonicalId } from './identifiers.js';
 
 export class BillingAPI {
   constructor(client) { this.client = client; }
@@ -8,6 +9,7 @@ export class BillingAPI {
   }
 
   async validate(publicKey) {
+    assertCanonicalId(publicKey, 'publicKey', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchDiscovery(`/api/v1/billing/validate/${encodeURIComponent(publicKey)}`);
   }
 

@@ -48,7 +48,9 @@ let testHome;
 describe('examples run against a stub daemon and discovery server (#18)', () => {
   let local;
   let discovery;
-  const state = { shares: [{ id: 's0', name: 'old', visibility: 'private', recipients: [] }] };
+  const s0 = '00'.repeat(32);
+  const s1 = '11'.repeat(32);
+  const state = { shares: [{ id: s0, name: 'old', visibility: 'private', recipients: [] }] };
 
   before(async () => {
     local = await startIpcStub((req, res) => {
@@ -56,11 +58,11 @@ describe('examples run against a stub daemon and discovery server (#18)', () => 
       if (req.method === 'GET' && req.url === '/api/identity') return json(res, 200, { handle: '@me', publicKey: 'ab'.repeat(32) });
       if (req.method === 'GET' && req.url === '/api/shares') return json(res, 200, state.shares);
       if (req.method === 'POST' && req.url === '/api/shares') {
-        const share = { id: 's1', name: req.body.path, visibility: req.body.visibility, recipients: req.body.recipients };
+        const share = { id: s1, name: req.body.path, visibility: req.body.visibility, recipients: req.body.recipients };
         state.shares.push(share);
         return json(res, 201, share);
       }
-      if (req.method === 'DELETE' && req.url === '/api/shares/s1') { state.shares = state.shares.filter((s) => s.id !== 's1'); return json(res, 200, { ok: true }); }
+      if (req.method === 'DELETE' && req.url === `/api/shares/${s1}`) { state.shares = state.shares.filter((s) => s.id !== s1); return json(res, 200, { ok: true }); }
       if (req.method === 'GET' && req.url === '/api/stats') return json(res, 200, { uploadSpeed: 2048, downloadSpeed: 4096 });
       if (req.method === 'GET' && req.url === '/api/transfers') return json(res, 200, [{ name: 'movie.mkv', status: 'downloading', progress: 0.5 }]);
       return json(res, 404, { error: 'no route' });
@@ -101,7 +103,7 @@ describe('examples run against a stub daemon and discovery server (#18)', () => 
     assert.match(out, /Share created:/);
     assert.match(out, /Share revoked/);
     const calls = local.requests.slice(before).map((r) => `${r.method} ${r.url}`);
-    assert.deepEqual(calls, ['POST /api/shares', 'GET /api/shares', 'DELETE /api/shares/s1']);
+    assert.deepEqual(calls, ['POST /api/shares', 'GET /api/shares', `DELETE /api/shares/${s1}`]);
     const created = local.requests.find((r) => r.method === 'POST' && r.url === '/api/shares');
     assert.deepEqual(created.body.recipients, ['@alice', '@bob']);
   });

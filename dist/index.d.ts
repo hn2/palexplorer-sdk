@@ -7,6 +7,7 @@ export interface ClientOptions {
   localEndpointFile?: string;
   localSecret?: string;
   localEndpoint?: boolean;
+  allowEnterpriseSha384?: boolean;
   apiKey?: string;
   discoveryServer?: string;
   localToken?: string;
@@ -36,6 +37,7 @@ export declare class PalexplorerClient {
   discoveryServer: string;
   localToken: string | null;
   localRoutes: 'stock' | 'extended';
+  allowEnterpriseSha384: boolean;
   timeout: number;
   auth: AuthAPI;
   shares: SharesAPI;
@@ -331,3 +333,11 @@ export declare class CapabilitiesAPI {
   issueToken(options: { app: string; scopes?: 'sync:deliver'[] }): Promise<{ token: string; app: string; scopes: string[] }>;
   revokeTokens(app: string): Promise<{ revoked: number }>;
 }
+
+export declare const SHA256_ID_RE: RegExp;
+export declare const SHA384_ID_RE: RegExp;
+export declare function isSha256Id(value: unknown): boolean;
+export declare function isCanonicalId(value: unknown, options?: { allowSha384?: boolean }): boolean;
+export declare function assertCanonicalId(value: unknown, name?: string, options?: { allowSha384?: boolean }): string;
+export declare function assertSafeTransferRef(value: unknown, name?: string): string;
+export declare function sanitizeTransportResponse<T>(value: T): T;

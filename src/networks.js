@@ -1,3 +1,5 @@
+import { assertCanonicalId } from './identifiers.js';
+
 export class NetworksAPI {
   constructor(client) { this.client = client; }
 
@@ -6,6 +8,7 @@ export class NetworksAPI {
   }
 
   async get(networkId) {
+    assertCanonicalId(networkId, 'networkId', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal(`/api/v1/networks/${encodeURIComponent(networkId)}`);
   }
 
@@ -17,6 +20,7 @@ export class NetworksAPI {
   }
 
   async update(networkId, patch) {
+    assertCanonicalId(networkId, 'networkId', { allowSha384: this.client.allowEnterpriseSha384 });
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
       throw new TypeError('patch must be a plain object');
     }
@@ -27,16 +31,19 @@ export class NetworksAPI {
   }
 
   async delete(networkId) {
+    assertCanonicalId(networkId, 'networkId', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal(`/api/v1/networks/${encodeURIComponent(networkId)}`, {
       method: 'DELETE',
     });
   }
 
   async members(networkId) {
+    assertCanonicalId(networkId, 'networkId', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal(`/api/v1/networks/${encodeURIComponent(networkId)}/members`);
   }
 
   async invite(networkId) {
+    assertCanonicalId(networkId, 'networkId', { allowSha384: this.client.allowEnterpriseSha384 });
     return this.client.fetchLocal(`/api/v1/networks/${encodeURIComponent(networkId)}/invite`, {
       method: 'POST',
     });
@@ -49,6 +56,8 @@ export class NetworksAPI {
   }
 
   async updateMember(networkId, userId, patch) {
+    assertCanonicalId(networkId, 'networkId', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertCanonicalId(userId, 'userId', { allowSha384: this.client.allowEnterpriseSha384 });
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
       throw new TypeError('patch must be a plain object');
     }

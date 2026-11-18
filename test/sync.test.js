@@ -39,8 +39,8 @@ test('deliver posts app, to and payload to /api/v1/sync/deliver with the bearer 
 test('deliver reuses a caller-supplied idempotency key so a retry is recognisable', async () => {
   mock(() => ({ ok: true, id: 'm1' }));
   const pal = new PalexplorerClient({ localToken: 'tok' });
-  await pal.sync.deliver({ app: 'a', to: 'b', payload: 1, idempotencyKey: 'k-1' });
-  await pal.sync.deliver({ app: 'a', to: 'b', payload: 1, idempotencyKey: 'k-1' });
+  await pal.sync.deliver({ app: 'a', to: 'cd'.repeat(32), payload: 1, idempotencyKey: 'k-1' });
+  await pal.sync.deliver({ app: 'a', to: 'cd'.repeat(32), payload: 1, idempotencyKey: 'k-1' });
   assert.deepEqual(calls.map((c) => c.opts.headers['Idempotency-Key']), ['k-1', 'k-1']);
 });
 

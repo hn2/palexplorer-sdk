@@ -1,4 +1,5 @@
 import { routeOr } from './unsupported.js';
+import { assertSafeTransferRef } from './identifiers.js';
 
 export class TransfersAPI {
   constructor(client) { this.client = client; }
@@ -8,6 +9,7 @@ export class TransfersAPI {
   }
 
   async download({ magnet, name, savePath, encryptedShareKey }) {
+    assertSafeTransferRef(magnet, 'magnet');
     return this.client.fetchLocal('/api/transfers/download', {
       method: 'POST',
       body: JSON.stringify({ magnet, name, savePath, encryptedShareKey }),
@@ -19,18 +21,21 @@ export class TransfersAPI {
   }
 
   async pause(magnet) {
+    assertSafeTransferRef(magnet, 'magnet');
     return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/pause`, {
       method: 'POST',
     });
   }
 
   async resume(magnet) {
+    assertSafeTransferRef(magnet, 'magnet');
     return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/resume`, {
       method: 'POST',
     });
   }
 
   async cancel(magnet) {
+    assertSafeTransferRef(magnet, 'magnet');
     return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}`, {
       method: 'DELETE',
     });
@@ -38,12 +43,14 @@ export class TransfersAPI {
 
   async files(magnet) {
     return routeOr(this.client, 'transfers.files', async () => {
+      assertSafeTransferRef(magnet, 'magnet');
       return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/files`);
     });
   }
 
   async downloadSelected(magnet, { fileIndices, destDir }) {
     return routeOr(this.client, 'transfers.downloadSelected', async () => {
+      assertSafeTransferRef(magnet, 'magnet');
       return this.client.fetchLocal(`/api/transfers/${encodeURIComponent(magnet)}/download-selected`, {
         method: 'POST',
         body: JSON.stringify({ fileIndices, destDir }),

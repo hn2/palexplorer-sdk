@@ -31,12 +31,13 @@ describe('TransfersAPI', () => {
   });
 
   test('download sends POST to /api/downloads', async () => {
+    const sha256Magnet = `pal3://share/${'ab'.repeat(32)}`;
     mock = mockFetch({ '/api/transfers/download': { id: 'd1', status: 'queued' } });
     const client = new PalexplorerClient();
-    await client.transfers.download({ magnet: 'magnet:?xt=urn:btih:abc', name: 'file.zip', savePath: '/tmp' });
+    await client.transfers.download({ magnet: sha256Magnet, name: 'file.zip', savePath: '/tmp' });
     assert.equal(mock.calls[0].opts.method, 'POST');
     const body = JSON.parse(mock.calls[0].opts.body);
-    assert.equal(body.magnet, 'magnet:?xt=urn:btih:abc');
+    assert.equal(body.magnet, sha256Magnet);
     assert.equal(body.name, 'file.zip');
     assert.equal(body.savePath, '/tmp');
   });
