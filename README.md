@@ -1,3 +1,5 @@
+> **Frozen.** This package predates PAL/3 and is not the current Palexplorer developer kit. The supported entry point is `@hn2/pal-sdk` (hn2/pal-sdk); the protocol is specified in hn2/pal-spec. No releases are made from this repository.
+
 # @palexplorer/sdk
 
 Official JavaScript SDK for the Palexplorer P2P file sharing API.
