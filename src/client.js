@@ -50,6 +50,7 @@ export class PalexplorerClient {
     this.localEndpointFile = options.localEndpointFile;
     this.localEndpoint = options.localEndpoint !== false;
     this.allowEnterpriseSha384 = Boolean(options.allowEnterpriseSha384);
+    this.signingIdentity = options.identity || null;
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout
       : 10000;

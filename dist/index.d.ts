@@ -8,6 +8,8 @@ export interface ClientOptions {
   localSecret?: string;
   localEndpoint?: boolean;
   allowEnterpriseSha384?: boolean;
+  /** Needed by identity.proStatus and billing.validate: the server answers only the holder of the key, so the request is signed with it. privateKey is the 64-byte Ed25519 secret key (or its 32-byte seed), as bytes or hex. */
+  identity?: { publicKey: string | Uint8Array; privateKey: string | Uint8Array };
   apiKey?: string;
   discoveryServer?: string;
   localToken?: string;
