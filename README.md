@@ -280,7 +280,7 @@ Identity resolution across local daemon and discovery server.
 | `whoami()` | `() => Promise<Identity>` | Get your own identity from local daemon |
 | `resolve(handle)` | `(string) => Promise<HandleEntry>` | Resolve a handle to public key via discovery server |
 | `devices(handle)` | `(string) => Promise<{ devices: Device[] }>` | List devices for a handle |
-| `proStatus(publicKey)` | `(string) => Promise<ProStatus>` | Check Pro subscription status for a public key |
+| `proStatus(publicKey)` | `(string) => Promise<ProStatus>` | Check Pro subscription status for your own public key; the request is signed with the `identity` client option |
 
 ```javascript
 const me = await pal.identity.whoami();

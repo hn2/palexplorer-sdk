@@ -1,4 +1,5 @@
 import { assertCanonicalId } from './identifiers.js';
+import { ownershipHeaders } from './ownershipProof.js';
 
 export class IdentityAPI {
   constructor(client) { this.client = client; }
@@ -27,6 +28,7 @@ export class IdentityAPI {
 
   async proStatus(publicKey) {
     assertCanonicalId(publicKey, 'publicKey', { allowSha384: this.client.allowEnterpriseSha384 });
-    return this.client.fetchDiscovery(`/api/v1/pro-status/${encodeURIComponent(publicKey)}`);
+    const headers = ownershipHeaders(this.client.signingIdentity, 'pro-status', publicKey);
+    return this.client.fetchDiscovery(`/api/v1/pro-status/${encodeURIComponent(publicKey)}`, { headers });
   }
 }
