@@ -6,7 +6,7 @@ export class BroadcastAPI {
   // Send a PAL/1.0 message to all members of a group
   async toGroup(groupId, message) {
     return routeOr(this.client, 'broadcast.toGroup', async () => {
-      return this.client.fetchLocal(`/api/pals/groups/${encodeURIComponent(groupId)}/broadcast`, {
+      return this.client.fetchLocal(`/api/groups/${encodeURIComponent(groupId)}/broadcast`, {
         method: 'POST',
         body: JSON.stringify({ message }),
       });

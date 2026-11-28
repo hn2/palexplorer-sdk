@@ -9,6 +9,7 @@ export class BillingAPI {
     return this.client.fetchLocal('/api/billing/status');
   }
 
+  // Targets palexplorer-server (src/billingStatusRoutes.mjs) with Ed25519 ownership proof headers.
   async validate(publicKey) {
     assertEd25519PublicKey(publicKey, 'publicKey');
     const headers = ownershipHeaders(this.client.signingIdentity, 'billing-validate', publicKey);

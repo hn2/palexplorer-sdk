@@ -56,6 +56,12 @@ tags:
     description: Online/offline status tracking
   - name: API Keys
     description: API key management (Pro only)
+  - name: Billing
+    description: Local billing status and palexplorer-server signed entitlement validation
+  - name: Groups
+    description: Pal group management and group broadcast (local daemon)
+  - name: Broadcast
+    description: Media broadcast controls (extended local daemon / desktop app)
   - name: Status
     description: Health checks
 
@@ -493,6 +499,385 @@ paths:
       responses:
         '200':
           description: Key revoked
+
+  /api/billing/status:
+    get:
+      tags: [Billing]
+      summary: Get local billing status
+      description: Returns the current Pro plan and billing status from the local daemon.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Billing status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isPro:
+                    type: boolean
+                  plan:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+
+  /api/billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Create checkout session (extended local route)
+      description: "Requires `localRoutes: 'extended'` on custom local daemons; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                successUrl:
+                  type: string
+                cancelUrl:
+                  type: string
+      responses:
+        '200':
+          description: Checkout session created
+
+  /api/billing/portal:
+    post:
+      tags: [Billing]
+      summary: Create customer portal session (extended local route)
+      description: "Requires `localRoutes: 'extended'` on custom local daemons; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Portal session created
+
+  /api/billing/license/activate:
+    post:
+      tags: [Billing]
+      summary: Activate license key (extended local route)
+      description: "Requires `localRoutes: 'extended'` on custom local daemons; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKey]
+              properties:
+                licenseKey:
+                  type: string
+      responses:
+        '200':
+          description: License activated
+
+  /api/billing/license/deactivate:
+    post:
+      tags: [Billing]
+      summary: Deactivate license key (extended local route)
+      description: "Requires `localRoutes: 'extended'` on custom local daemons; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKey]
+              properties:
+                licenseKey:
+                  type: string
+      responses:
+        '200':
+          description: License deactivated
+
+  /api/v1/billing/validate/{publicKey}:
+    get:
+      tags: [Billing]
+      summary: Validate billing plan on palexplorer-server
+      description: |
+        Targets `palexplorer-server` (`src/billingStatusRoutes.mjs`). Returns signed 24-hour plan validation.
+        Requires Ed25519 key-ownership headers signing `billing-validate:<publicKey>:<x-timestamp>`.
+      parameters:
+        - name: publicKey
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{64}$'
+        - name: x-timestamp
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Unix timestamp in milliseconds (must be within 5 minutes)
+        - name: x-signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Ed25519 signature (hex) over `billing-validate:<publicKey>:<x-timestamp>`
+      responses:
+        '200':
+          description: Signed billing validation payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicKey:
+                    type: string
+                  plan:
+                    type: string
+                  planStatus:
+                    type: string
+                    nullable: true
+                  pro:
+                    type: boolean
+                  enterprise:
+                    type: boolean
+                  limits:
+                    type: object
+                  issuedAt:
+                    type: string
+                    format: date-time
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  signature:
+                    type: string
+        '400':
+          description: Invalid publicKey format
+        '401':
+          description: Missing, expired, or invalid Ed25519 ownership signature
+
+  /api/v1/pro-status/{publicKey}:
+    get:
+      tags: [Identity, Billing]
+      summary: Check Pro entitlement status on palexplorer-server
+      description: |
+        Targets `palexplorer-server` (`src/billingStatusRoutes.mjs`). Returns signed Pro entitlement status.
+        Requires Ed25519 key-ownership headers signing `pro-status:<publicKey>:<x-timestamp>`.
+      parameters:
+        - name: publicKey
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{64}$'
+        - name: x-timestamp
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Unix timestamp in milliseconds (must be within 5 minutes)
+        - name: x-signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Ed25519 signature (hex) over `pro-status:<publicKey>:<x-timestamp>`
+      responses:
+        '200':
+          description: Signed Pro status and entitlement token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicKey:
+                    type: string
+                  pro:
+                    type: boolean
+                  plan:
+                    type: string
+                  planStatus:
+                    type: string
+                    nullable: true
+                  limits:
+                    type: object
+                  entitlement:
+                    type: string
+                  entitlementSig:
+                    type: string
+                  serverPublicKey:
+                    type: string
+        '400':
+          description: Invalid publicKey format
+        '401':
+          description: Missing, expired, or invalid Ed25519 ownership signature
+
+  /api/groups:
+    get:
+      tags: [Groups]
+      summary: List groups
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      type: object
+    post:
+      tags: [Groups]
+      summary: Create a group
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                visibility:
+                  type: string
+      responses:
+        '200':
+          description: Group created
+
+  /api/groups/{groupId}:
+    delete:
+      tags: [Groups]
+      summary: Delete a group
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Group deleted
+
+  /api/groups/{groupId}/members:
+    post:
+      tags: [Groups]
+      summary: Add a member to a group
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [palId]
+              properties:
+                palId:
+                  type: string
+      responses:
+        '200':
+          description: Member added
+
+  /api/groups/{groupId}/members/{palId}:
+    delete:
+      tags: [Groups]
+      summary: Remove a member from a group
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: palId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Member removed
+
+  /api/groups/{groupId}/broadcast:
+    post:
+      tags: [Groups, Broadcast]
+      summary: Broadcast a message to all group members (extended local route)
+      description: "Used by both `GroupsAPI.broadcast` and `BroadcastAPI.toGroup`. Requires `localRoutes: 'extended'`; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Broadcast sent
+
+  /api/broadcast/start:
+    post:
+      tags: [Broadcast]
+      summary: Start media broadcast (extended local route / desktop only)
+      description: "Requires `localRoutes: 'extended'`; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Broadcast started
+        '503':
+          description: Desktop app required
+
+  /api/broadcast/stop:
+    post:
+      tags: [Broadcast]
+      summary: Stop media broadcast (extended local route / desktop only)
+      description: "Requires `localRoutes: 'extended'`; stock local daemon rejects with 501."
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Broadcast stopped
+        '503':
+          description: Desktop app required
 
 components:
   securitySchemes:
