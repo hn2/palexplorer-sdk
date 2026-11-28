@@ -7,6 +7,8 @@ export interface ClientOptions {
   localEndpointFile?: string;
   localSecret?: string;
   localEndpoint?: boolean;
+  allowLegacySha256?: boolean;
+  /** @deprecated SHA-384 is now always the canonical default (PAL/3.0 §14.5). */
   allowEnterpriseSha384?: boolean;
   /** Needed by identity.proStatus and billing.validate: the server answers only the holder of the key, so the request is signed with it. privateKey is the 64-byte Ed25519 secret key (or its 32-byte seed), as bytes or hex. */
   identity?: { publicKey: string | Uint8Array; privateKey: string | Uint8Array };
@@ -336,10 +338,12 @@ export declare class CapabilitiesAPI {
   revokeTokens(app: string): Promise<{ revoked: number }>;
 }
 
-export declare const SHA256_ID_RE: RegExp;
 export declare const SHA384_ID_RE: RegExp;
+export declare const SHA256_ID_RE: RegExp;
+export declare function isSha384Id(value: unknown): boolean;
 export declare function isSha256Id(value: unknown): boolean;
-export declare function isCanonicalId(value: unknown, options?: { allowSha384?: boolean }): boolean;
-export declare function assertCanonicalId(value: unknown, name?: string, options?: { allowSha384?: boolean }): string;
+export declare function isCanonicalId(value: unknown, options?: { allowLegacySha256?: boolean }): boolean;
+export declare function assertCanonicalId(value: unknown, name?: string, options?: { allowLegacySha256?: boolean }): string;
+export declare function assertEd25519PublicKey(value: unknown, name?: string): string;
 export declare function assertSafeTransferRef(value: unknown, name?: string): string;
 export declare function sanitizeTransportResponse<T>(value: T): T;

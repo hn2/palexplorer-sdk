@@ -48,8 +48,8 @@ let testHome;
 describe('examples run against a stub daemon and discovery server (#18)', () => {
   let local;
   let discovery;
-  const s0 = '00'.repeat(32);
-  const s1 = '11'.repeat(32);
+  const s0 = '00'.repeat(48);
+  const s1 = '11'.repeat(48);
   const state = { shares: [{ id: s0, name: 'old', visibility: 'private', recipients: [] }] };
 
   before(async () => {

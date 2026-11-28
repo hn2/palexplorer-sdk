@@ -15,14 +15,14 @@ export class SharesAPI {
   }
 
   async remove(shareId) {
-    assertCanonicalId(shareId, 'shareId', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertCanonicalId(shareId, 'shareId', { allowLegacySha256: this.client.allowLegacySha256 });
     return this.client.fetchLocal(`/api/shares/${encodeURIComponent(shareId)}`, {
       method: 'DELETE',
     });
   }
 
   async get(shareId) {
-    assertCanonicalId(shareId, 'shareId', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertCanonicalId(shareId, 'shareId', { allowLegacySha256: this.client.allowLegacySha256 });
     return this.client.fetchLocal(`/api/shares/${encodeURIComponent(shareId)}`);
   }
 }

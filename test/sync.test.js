@@ -25,13 +25,14 @@ test('sync and capabilities are exported and attached to the client', () => {
 test('deliver posts app, to and payload to /api/v1/sync/deliver with the bearer token', async () => {
   mock(() => ({ ok: true, id: 'm1' }));
   const pal = new PalexplorerClient({ localToken: 'tok' });
-  const res = await pal.sync.deliver({ app: 'fl.sync', to: 'ab'.repeat(32), payload: { type: 'x' } });
+  const peerId = 'ab'.repeat(48);
+  const res = await pal.sync.deliver({ app: 'fl.sync', to: peerId, payload: { type: 'x' } });
   assert.equal(res.id, 'm1');
   assert.equal(calls[0].url.pathname, '/api/v1/sync/deliver');
   assert.equal(calls[0].opts.method, 'POST');
   assert.equal(calls[0].opts.headers.Authorization, 'Bearer tok');
   const sent = JSON.parse(calls[0].opts.body);
-  assert.deepEqual({ app: sent.app, to: sent.to, payload: sent.payload }, { app: 'fl.sync', to: 'ab'.repeat(32), payload: { type: 'x' } });
+  assert.deepEqual({ app: sent.app, to: sent.to, payload: sent.payload }, { app: 'fl.sync', to: peerId, payload: { type: 'x' } });
   assert.match(sent.idempotencyKey, /^[0-9a-f-]{36}$/);
   assert.equal(calls[0].opts.headers['Idempotency-Key'], sent.idempotencyKey);
 });
@@ -39,8 +40,9 @@ test('deliver posts app, to and payload to /api/v1/sync/deliver with the bearer 
 test('deliver reuses a caller-supplied idempotency key so a retry is recognisable', async () => {
   mock(() => ({ ok: true, id: 'm1' }));
   const pal = new PalexplorerClient({ localToken: 'tok' });
-  await pal.sync.deliver({ app: 'a', to: 'cd'.repeat(32), payload: 1, idempotencyKey: 'k-1' });
-  await pal.sync.deliver({ app: 'a', to: 'cd'.repeat(32), payload: 1, idempotencyKey: 'k-1' });
+  const peerId = 'cd'.repeat(48);
+  await pal.sync.deliver({ app: 'a', to: peerId, payload: 1, idempotencyKey: 'k-1' });
+  await pal.sync.deliver({ app: 'a', to: peerId, payload: 1, idempotencyKey: 'k-1' });
   assert.deepEqual(calls.map((c) => c.opts.headers['Idempotency-Key']), ['k-1', 'k-1']);
 });
 

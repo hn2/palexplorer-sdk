@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { randomBytes, createHmac } from 'node:crypto';
 
-export async function startIpcStub(handler, { secret } = {}) {
+export async function startIpcStub(handler, { secret, hashAlg = 'sha384' } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pal-sdk-ipc-'));
   fs.chmodSync(dir, 0o700);
   const socketPath = process.platform === 'win32' ? `\\\\.\\pipe\\pal-sdk-${randomBytes(12).toString('hex')}` : path.join(dir, 'core.sock');
@@ -24,7 +24,7 @@ export async function startIpcStub(handler, { secret } = {}) {
         const message = JSON.parse(pending.subarray(4, 4 + length)); pending = pending.subarray(4 + length);
         if (message.kind === 'hello') {
           const nonce = randomBytes(16).toString('hex');
-          const proof = createHmac('sha256', secret || randomBytes(32)).update('pal-ipc-server/v1' + String.fromCharCode(0) + message.nonce + String.fromCharCode(0) + nonce).digest('hex');
+          const proof = createHmac(hashAlg, secret || randomBytes(32)).update('pal-ipc-server/v1' + String.fromCharCode(0) + message.nonce + String.fromCharCode(0) + nonce).digest('hex');
           socket.write(frame({ kind: 'challenge', schema: 'pal.local-ipc/v1', nonce, proof }));
           continue;
         }

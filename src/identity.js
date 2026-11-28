@@ -1,4 +1,4 @@
-import { assertCanonicalId } from './identifiers.js';
+import { assertEd25519PublicKey } from './identifiers.js';
 import { ownershipHeaders } from './ownershipProof.js';
 
 export class IdentityAPI {
@@ -27,7 +27,7 @@ export class IdentityAPI {
   }
 
   async proStatus(publicKey) {
-    assertCanonicalId(publicKey, 'publicKey', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertEd25519PublicKey(publicKey, 'publicKey');
     const headers = ownershipHeaders(this.client.signingIdentity, 'pro-status', publicKey);
     return this.client.fetchDiscovery(`/api/v1/pro-status/${encodeURIComponent(publicKey)}`, { headers });
   }

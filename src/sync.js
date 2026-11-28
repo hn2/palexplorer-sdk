@@ -20,7 +20,7 @@ export class SyncAPI {
   // `idempotencyKey` defaults to a fresh random id; pass the same key when retrying a delivery whose answer was lost so
   // the core can recognise it as the same request.
   async deliver({ app, to, payload, idempotencyKey = randomKey() }) {
-    assertCanonicalId(to, 'to', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertCanonicalId(to, 'to', { allowLegacySha256: this.client.allowLegacySha256 });
     return this.client.fetchLocal('/api/v1/sync/deliver', {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },

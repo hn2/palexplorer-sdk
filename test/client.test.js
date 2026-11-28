@@ -102,7 +102,7 @@ describe('PalexplorerClient', () => {
 
 describe('SharesAPI', () => {
   let mock;
-  const shareId = 'ab'.repeat(32);
+  const shareId = 'ab'.repeat(48);
   afterEach(() => { if (mock) mock.restore(); });
 
   test('list calls /api/shares', async () => {
