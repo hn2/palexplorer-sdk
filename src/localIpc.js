@@ -106,9 +106,13 @@ export async function requestLocalIpc(socketPath, path, { method = 'GET', body, 
           if (value.kind === 'error') throw new PalexplorerError(value.error || 'IPC rejected', value.status || 500, {});
           if (!challenged) {
             // The token is sent only to a server that proves it holds the endpoint secret.
+            // Prefer HMAC-SHA-384 (48 bytes / 96 hex); accept width-detected legacy HMAC-SHA-256 (32 bytes / 64 hex) during rollout.
             if (value.kind !== 'challenge' || typeof value.nonce !== 'string' || typeof value.proof !== 'string' || !/^[0-9a-f]{32,64}$/.test(value.nonce)) throw new Error('Local IPC server did not prove its identity');
-            const expected = crypto.createHmac('sha256', secret).update('pal-ipc-server/v1' + String.fromCharCode(0) + clientNonce + String.fromCharCode(0) + value.nonce).digest();
+            if (!/^[0-9a-f]+$/i.test(value.proof)) throw new Error('Local IPC server did not prove its identity');
             const actual = Buffer.from(value.proof, 'hex');
+            const alg = actual.length === 48 ? 'sha384' : actual.length === 32 ? 'sha256' : null;
+            if (!alg) throw new Error('Local IPC server did not prove its identity');
+            const expected = crypto.createHmac(alg, secret).update('pal-ipc-server/v1' + String.fromCharCode(0) + clientNonce + String.fromCharCode(0) + value.nonce).digest();
             if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) throw new Error('Local IPC server did not prove its identity');
             challenged = true;
             socket.write(frame({ kind: 'auth', schema: LOCAL_IPC_SCHEMA, token }));

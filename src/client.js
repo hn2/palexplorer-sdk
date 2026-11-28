@@ -49,7 +49,8 @@ export class PalexplorerClient {
     this.localSecret = typeof options.localSecret === 'string' && options.localSecret ? options.localSecret : undefined;
     this.localEndpointFile = options.localEndpointFile;
     this.localEndpoint = options.localEndpoint !== false;
-    this.allowEnterpriseSha384 = Boolean(options.allowEnterpriseSha384);
+    this.allowLegacySha256 = Boolean(options.allowLegacySha256);
+    this.allowEnterpriseSha384 = true;
     this.signingIdentity = options.identity || null;
     this.timeout = (typeof options.timeout === 'number' && options.timeout > 0 && Number.isFinite(options.timeout))
       ? options.timeout

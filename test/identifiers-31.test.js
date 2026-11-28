@@ -8,6 +8,7 @@ import {
   DiscoveryClient,
   SHA256_ID_RE,
   SHA384_ID_RE,
+  isSha384Id,
   isSha256Id,
   isCanonicalId,
   assertCanonicalId,
@@ -15,7 +16,7 @@ import {
   sanitizeTransportResponse,
 } from '../src/index.js';
 
-describe('canonical SHA-256 identifier validation (#31)', () => {
+describe('canonical PAL/3 SHA-384 identifier validation (#31, #40)', () => {
   const validSha256 = 'ab'.repeat(32);
   const validSha384 = 'cd'.repeat(48);
   let originalFetch;
@@ -25,26 +26,29 @@ describe('canonical SHA-256 identifier validation (#31)', () => {
     originalFetch = null;
   });
 
-  test('isSha256Id and isCanonicalId accept 64 lowercase hex and reject short, uppercase, or BLAKE/SHA-1/MD5 prefixes', () => {
+  test('isSha384Id and isCanonicalId accept 96 lowercase hex by default and reject 64-hex, short, uppercase, or prefixed hashes', () => {
+    assert.equal(isSha384Id(validSha384), true);
     assert.equal(isSha256Id(validSha256), true);
-    assert.equal(isCanonicalId(validSha256), true);
-    assert.equal(isCanonicalId(validSha384), false);
-    assert.equal(isCanonicalId(validSha384, { allowSha384: true }), true);
-    assert.equal(SHA256_ID_RE.test(validSha256), true);
+    assert.equal(isCanonicalId(validSha384), true);
+    assert.equal(isCanonicalId(validSha256), false);
+    assert.equal(isCanonicalId(validSha256, { allowLegacySha256: true }), true);
     assert.equal(SHA384_ID_RE.test(validSha384), true);
+    assert.equal(SHA256_ID_RE.test(validSha256), true);
 
     for (const bad of [
       '',
       'ab'.repeat(8),
       'ab'.repeat(16),
-      'AB'.repeat(32),
+      validSha256,
+      'CD'.repeat(48),
+      `sha256:${validSha256}`,
       `blake3:${validSha256}`,
       `blake2b:${validSha256}`,
       `sha1:${'ab'.repeat(20)}`,
       `md5:${'ab'.repeat(16)}`,
       `btih:${'ab'.repeat(20)}`,
     ]) {
-      assert.equal(isSha256Id(bad), false, `expected false for ${bad}`);
+      assert.equal(isSha384Id(bad), false, `expected false for ${bad}`);
       assert.throws(() => assertCanonicalId(bad, 'resourceId'), TypeError);
     }
   });
@@ -58,17 +62,17 @@ describe('canonical SHA-256 identifier validation (#31)', () => {
     await assert.rejects(() => client.sync.deliver({ app: 'fl', to: 'short', payload: {} }), TypeError);
     await assert.rejects(() => client.sync.deliver({ app: 'fl', to: `blake3:${validSha256}`, payload: {} }), /forbidden hash algorithm/);
     await assert.rejects(() => client.shares.get('short-share'), TypeError);
-    await assert.rejects(() => client.shares.remove('AB'.repeat(32)), TypeError);
-    await assert.rejects(() => client.identity.proStatus('not-a-sha256-key'), TypeError);
+    await assert.rejects(() => client.shares.remove('AB'.repeat(48)), TypeError);
+    await assert.rejects(() => client.identity.proStatus('not-a-valid-key'), TypeError);
     await assert.rejects(() => client.billing.validate('1234'), TypeError);
     await assert.rejects(() => client.networks.get('short-net'), TypeError);
-    await assert.rejects(() => client.networks.updateMember(validSha256, 'short-user', { role: 'member' }), TypeError);
+    await assert.rejects(() => client.networks.updateMember(validSha384, 'short-user', { role: 'member' }), TypeError);
     await assert.rejects(() => client.shareLinks.create({ shareId: 'short' }), TypeError);
     await assert.rejects(() => client.transfers.download({ magnet: 'magnet:?xt=urn:btih:deadbeef' }), /forbidden legacy hash/);
     assert.equal(calls, 0);
   });
 
-  test('allowEnterpriseSha384 permits 96-hex SHA-384 identifiers when explicitly enabled', async () => {
+  test('SHA-384 (96-hex) identifiers work by default and 64-hex requires explicit allowLegacySha256', async () => {
     const seen = [];
     originalFetch = globalThis.fetch;
     globalThis.fetch = async (url) => {
@@ -77,13 +81,14 @@ describe('canonical SHA-256 identifier validation (#31)', () => {
     };
 
     const stdClient = new PalexplorerClient({ localToken: 'tok' });
-    await assert.rejects(() => stdClient.shares.get(validSha384), TypeError);
+    await assert.rejects(() => stdClient.shares.get(validSha256), TypeError);
+    await stdClient.shares.get(validSha384);
+    await stdClient.networks.get(validSha384);
 
-    const entClient = new PalexplorerClient({ localToken: 'tok', allowEnterpriseSha384: true });
-    assert.equal(entClient.allowEnterpriseSha384, true);
-    await entClient.shares.get(validSha384);
-    await entClient.networks.get(validSha384);
-    assert.deepEqual(seen, [`/api/shares/${validSha384}`, `/api/v1/networks/${validSha384}`]);
+    const legacyClient = new PalexplorerClient({ localToken: 'tok', allowLegacySha256: true });
+    assert.equal(legacyClient.allowLegacySha256, true);
+    await legacyClient.shares.get(validSha256);
+    assert.deepEqual(seen, [`/api/shares/${validSha384}`, `/api/v1/networks/${validSha384}`, `/api/shares/${validSha256}`]);
   });
 
   test('transport response normalization strips peer IP, port, and endpoint fields', async () => {

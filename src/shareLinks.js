@@ -4,7 +4,7 @@ export class ShareLinksAPI {
   constructor(client) { this.client = client; }
 
   async create({ shareId, expiresIn, password, maxDownloads, recipients } = {}) {
-    assertCanonicalId(shareId, 'shareId', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertCanonicalId(shareId, 'shareId', { allowLegacySha256: this.client.allowLegacySha256 });
     return this.client.fetchDiscovery('/api/v1/share-links', {
       method: 'POST',
       body: JSON.stringify({ shareId, expiresIn, password, maxDownloads, recipients }),
@@ -23,7 +23,7 @@ export class ShareLinksAPI {
   }
 
   async createGroupLink({ shareId, groupId } = {}) {
-    assertCanonicalId(shareId, 'shareId', { allowSha384: this.client.allowEnterpriseSha384 });
+    assertCanonicalId(shareId, 'shareId', { allowLegacySha256: this.client.allowLegacySha256 });
     return this.client.fetchDiscovery('/api/v1/share-links-to-groups', {
       method: 'POST',
       body: JSON.stringify({ shareId, groupId }),

@@ -20,11 +20,13 @@ export { NetworksAPI } from './networks.js';
 export { AiAPI } from './ai.js';
 export { SyncAPI, CapabilitiesAPI } from './sync.js';
 export {
-  SHA256_ID_RE,
   SHA384_ID_RE,
+  SHA256_ID_RE,
+  isSha384Id,
   isSha256Id,
   isCanonicalId,
   assertCanonicalId,
+  assertEd25519PublicKey,
   assertSafeTransferRef,
   sanitizeTransportResponse,
 } from './identifiers.js';

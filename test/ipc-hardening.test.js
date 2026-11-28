@@ -33,6 +33,16 @@ test('the client sends the token only after the server proves it holds the endpo
   } finally { await good.close(); }
 });
 
+test('the client also accepts legacy HMAC-SHA-256 IPC proofs during rollout (#40)', async () => {
+  const secret = randomBytes(32).toString('hex');
+  const legacy = await startIpcStub(respond, { secret, hashAlg: 'sha256' });
+  try {
+    const result = await requestLocalIpc(legacy.socketPath, '/api/x', { token: 'legacy-token', timeoutMs: 2000, secret });
+    assert.equal(result.status, 200);
+    assert.deepEqual(legacy.tokens, ['legacy-token']);
+  } finally { await legacy.close(); }
+});
+
 test('an impostor server without the secret never receives the token', async () => {
   const impostor = await startIpcStub(respond, { secret: randomBytes(32).toString('hex') });
   try {
