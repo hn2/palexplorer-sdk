@@ -273,12 +273,12 @@ Get devices for a pal (resolved via discovery server).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/pals/groups` | List groups |
-| POST | `/pals/groups` | Create group — body: `{ name, description?, visibility? }` |
-| POST | `/pals/groups/:id/members` | Add member — body: `{ palId }` |
-| DELETE | `/pals/groups/:id/members/:palId` | Remove member |
-| DELETE | `/pals/groups/:id` | Delete group |
-| POST | `/pals/groups/:id/broadcast` | Send message to all group members — body: `{ message }` → `{ ok, sent, total }` |
+| GET | `/groups` | List groups |
+| POST | `/groups` | Create group — body: `{ name, description?, visibility? }` |
+| POST | `/groups/:id/members` | Add member — body: `{ palId }` |
+| DELETE | `/groups/:id/members/:palId` | Remove member |
+| DELETE | `/groups/:id` | Delete group |
+| POST | `/groups/:id/broadcast` | Send message to all group members (extended local route) — body: `{ message }` → `{ ok, sent, total }` |
 
 ### Messages
 
@@ -369,7 +369,7 @@ _Requires auth + CSRF_
 
 _Requires auth + CSRF_
 
-> **Note:** Media streaming broadcast (`start`/`stop`) requires the Palexplorer desktop app. These endpoints return `503 desktopRequired: true` when called via the web REST API. Group messaging broadcast is available via `POST /pals/groups/:id/broadcast`.
+> **Note:** Media streaming broadcast (`start`/`stop`) requires the Palexplorer desktop app. These endpoints return `503 desktopRequired: true` when called via the web REST API. Group messaging broadcast is available via `POST /groups/:id/broadcast`.
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -385,8 +385,17 @@ _Requires auth_
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/billing/status` | Pro plan status — `{ isPro, plan, expiresAt? }` |
-| GET | `/billing/checkout` | Redirect to Lemon Squeezy checkout |
-| GET | `/billing/portal` | Redirect to customer portal |
+| POST | `/billing/checkout` | Create checkout session (extended local route) |
+| POST | `/billing/portal` | Create customer portal session (extended local route) |
+| POST | `/billing/license/activate` | Activate license key (extended local route) |
+| POST | `/billing/license/deactivate` | Deactivate license key (extended local route) |
+
+_Discovery / `palexplorer-server` endpoints (require `x-timestamp` and `x-signature` Ed25519 ownership headers):_
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/billing/validate/:publicKey` | Signed 24h billing validation (`billing-validate:<publicKey>:<timestamp>`) |
+| GET | `/api/v1/pro-status/:publicKey` | Signed Pro entitlement status (`pro-status:<publicKey>:<timestamp>`) |
 
 ---
 

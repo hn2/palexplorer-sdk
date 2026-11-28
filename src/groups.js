@@ -38,7 +38,7 @@ export class GroupsAPI {
 
   async broadcast(groupId, message) {
     return routeOr(this.client, 'groups.broadcast', async () => {
-      return this.client.fetchLocal(`/api/pals/groups/${encodeURIComponent(groupId)}/broadcast`, {
+      return this.client.fetchLocal(`/api/groups/${encodeURIComponent(groupId)}/broadcast`, {
         method: 'POST',
         body: JSON.stringify({ message }),
       });
